@@ -1,0 +1,12 @@
+/*
+ * Minimal shell overrides.
+ * Liquid glass theme: main.ts → installLiquidGlassStyles (after original HTML).
+ */
+
+.empty-state {
+  padding: 22px 24px;
+  border: 1px dashed rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
