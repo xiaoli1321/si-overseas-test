@@ -1,0 +1,84 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.nosexy
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+tests/
+
+# Environment and Secrets
+.env
+.env.*
+!.env.example
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.project
+.pydevproject
+.settings/
+
+# Local Data / Uploads
+data/
+uploads/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation and references
+README.md
+参考资料.txt
+
+# Agent and Project Configs
+.agent/
+.agents/
+.claude/
+.codex/
+.gemini/
+.trae-cn/
+.trellis/
+apifox_openapi.json

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.tmp/
+.vite-cache/
+*.tsbuildinfo
+.git/
+.gitignore
+README.md
+design/
+*.xlsx
+*.pdf
+.DS_Store

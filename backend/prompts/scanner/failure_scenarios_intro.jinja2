@@ -1,0 +1,23 @@
+下面是植入失败各个故障场景的介绍：
+{% for s in scenarios %}
+{% if target_category is none or s.scenario_id == target_category %}
+## 故障场景：【{{ s.name_cn }}】（{{ s.name_en }}）
+场景描述：
+- 介绍：{{ s.system_prompt }}
+- 核心原因：{{ s.core_cause }}
+判断条件：
+{% for condition in s.judgment_conditions %}
+- 可能情况{{ loop.index }}: {{ condition }}
+{% endfor %}
+{% if s.negative_discrimination %}
+不属于{{ s.name_cn }}的情况：
+{% for rule in s.negative_discrimination %}
+- {{ rule }}
+{% endfor %}
+{% endif %}
+{% if target_category is none %}
+{# §3 (detector): 判责写在文本里 #}
+判责分类：{{ s.responsibility }}
+{% endif %}
+{% endif %}
+{% endfor %}

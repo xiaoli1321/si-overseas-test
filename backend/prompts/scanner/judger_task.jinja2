@@ -1,0 +1,23 @@
+【置信度评分规则】
+在评估用户上传的照片时，参照「故障场景的实际照片」的示例，对现有图片进行【置信度】10级评分。
+评分范围：
+- 0-1分: 完全不属于（不相关）
+- 2-5分: 大概率不属于
+- 6-7分: 可能属于
+- 8-9分: 大概率属于
+- 10分: 完全属于
+
+【当前评估的故障场景】
+请判断用户提供的以下照片（可能包含多张，均为同一设备）是否属于——「{{ category_name }}」（ID: {{ scenario_id }}）
+
+输出字段说明：
+- "scenario_id": 当前场景ID = {{ scenario_id }}
+- "score": 0-10
+- "is_match": 是否匹配
+- "core_features_hit": 命中的核心证据（请说明参考了哪些照片中的哪些特征）
+- "exclusion_features_hit": 命中的排他证据
+- "different_features": 不匹配的关键差异
+- "image_quality": "clear"/"medium"/"poor"
+- "ambiguity_level": "low"/"medium"/"high"
+- "reasoning": 简洁推理
+- "responsibility": "产品本身损坏" 或 "用户操作问题"

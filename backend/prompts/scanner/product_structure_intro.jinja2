@@ -1,0 +1,6 @@
+下面是产品各个结构的介绍：
+{% for p in product_structures %}
+## 结构名：【{{ p.name }}】
+结构作用：{{ p.description }}
+使用方式：{{ p.usage }}
+{% endfor %}

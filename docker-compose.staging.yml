@@ -1,0 +1,40 @@
+# ==============================================================================
+# 使用方式：
+#   bash build.sh
+#   docker compose -f docker-compose.staging.yml --env-file .env.staging up -d
+# ==============================================================================
+
+services:
+  backend:
+    image: si-overseas-backend:latest
+    container_name: si-overseas-backend-staging
+    environment:
+      APP_ENV: staging
+    env_file:
+      - .env.staging
+    ports:
+      - "${API_PORT:-8000}:8000"
+    restart: unless-stopped
+    networks:
+      - si-overseas-network
+
+  frontend:
+    build:
+      context: ./si-overseas
+      dockerfile: Dockerfile
+    image: si-overseas-frontend:latest
+    container_name: si-overseas-frontend-staging
+    environment:
+      PROXY_TARGET: http://backend:8000
+      PREVIEW_ALLOWED_HOSTS: ${PREVIEW_ALLOWED_HOSTS:-test-overseas-agent.sisensing.com}
+    ports:
+      - "${PORT:-8090}:4173"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - si-overseas-network
+
+networks:
+  si-overseas-network:
+    driver: bridge
