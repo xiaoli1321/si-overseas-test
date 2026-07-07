@@ -521,7 +521,7 @@ async function bootstrap(initialSessionId?: string) {
       const targetId = initialSessionId || currentSessionId.value;
       const current = sessions.value.find(s => s.id === targetId) || (targetId === currentSessionId.value ? getCurrentSession() : null);
       
-      if (current && isEmptySession(current) && !fetched.some(s => s.id === current.id)) {
+      if (current && !fetched.some(s => s.id === current.id)) {
         sessions.value = [current, ...fetched];
       } else {
         sessions.value = fetched;
@@ -531,6 +531,21 @@ async function bootstrap(initialSessionId?: string) {
         currentSessionId.value = targetId;
         if (fetched.some(s => s.id === targetId)) {
           await openSession(targetId);
+        } else if (!sessions.value.some(s => s.id === targetId)) {
+          // Backend has no record of this session yet (e.g. a brand-new local id
+          // or one dropped after a DB reset). Seed a local placeholder so the
+          // current id always maps to a visible session — otherwise turns get
+          // written on the backend but the UI has nowhere to render them. The
+          // backend get-or-creates the session on the first turn.
+          const seeded: ChatSession = {
+            id: targetId,
+            title: 'New device judgment',
+            createdAt: nowIso(),
+            updatedAt: nowIso(),
+            messages: [],
+          };
+          sessions.value = [seeded, ...sessions.value];
+          persistSessions();
         }
       } else if (fetched.length > 0) {
         currentSessionId.value = fetched[0].id;
