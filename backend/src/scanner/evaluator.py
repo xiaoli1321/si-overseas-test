@@ -327,7 +327,7 @@ class ImplantationScanner:
                 extra_body={"enable_thinking": False},
             )
             self._llm_cache[key] = llm.with_structured_output(
-                model_cls, method="json_mode"
+                model_cls, method="json_schema"
             )
             return self._llm_cache[key]
 

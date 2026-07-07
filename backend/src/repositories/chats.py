@@ -23,6 +23,12 @@ async def list_chat_sessions(db: AsyncSession, user_id: int) -> Sequence[ChatSes
 async def create_chat_session(
     db: AsyncSession, user_id: int, session_id: str, title: str
 ) -> ChatSession:
+    # Idempotent: chat IDs are generated client-side, so the same ID may be
+    # created more than once (races, retries, or eager writes before the first
+    # message). Return the existing session instead of hitting a PK conflict.
+    existing = await get_chat_session(db, user_id, session_id)
+    if existing is not None:
+        return existing
     session = ChatSession(id=string_to_bigint(session_id), user_id=user_id, title=title)
     db.add(session)
     await db.flush()

@@ -159,7 +159,11 @@ async def add_message_endpoint(
 ) -> dict:
     session = await get_chat_session(db, user.id, session_id)
     if not session:
-        raise NotFoundError("Chat session not found")
+        # Chat IDs are generated client-side; materialize the session on first
+        # message instead of 404ing (e.g. after a DB reset or an offline create).
+        session = await create_chat_session(
+            db, user.id, session_id, "New device judgment"
+        )
 
     # Update title if it was default and user sent the first message
     if session.title == "New device judgment" and payload.role == "user":

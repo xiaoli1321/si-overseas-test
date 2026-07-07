@@ -186,7 +186,9 @@ class DetectorPipeline:
                 temperature=0.0,
                 extra_body={"enable_thinking": False},
             )
-            self._llm = llm.with_structured_output(DetectorOutput, method="json_mode")
+            self._llm = llm.with_structured_output(
+                DetectorOutput, method="json_schema"
+            )
         return self._llm
 
     def _build_gs1_intro_message(self) -> HumanMessage:
