@@ -149,7 +149,7 @@ describe('FaultQueryView', () => {
   });
 
   it('shows fuzzy candidates and adds the chosen candidate without navigating', async () => {
-    const { router, wrapper } = await mountFaultQuery('application-failure');
+    const { router, wrapper } = await mountFaultQuery('data-accuracy');
 
     await wrapper.find('textarea[aria-label="Fault SN lookup input"]').setValue('P22512128');
     await wrapper.find('form').trigger('submit');
@@ -166,7 +166,7 @@ describe('FaultQueryView', () => {
   });
 
   it('keeps selected devices under the search command and matching candidates at the bottom', async () => {
-    const { wrapper } = await mountFaultQuery('application-failure');
+    const { wrapper } = await mountFaultQuery('data-accuracy');
 
     await wrapper.find('textarea[aria-label="Fault SN lookup input"]').setValue('P22512128');
     await wrapper.find('form').trigger('submit');
@@ -359,6 +359,25 @@ describe('FaultQueryView', () => {
     expect(wrapper.find('[data-test="upload-modal"]').exists()).toBe(false);
 
     readAsDataURLSpy.mockRestore();
+  });
+
+  it('trusts entered SN/deviceName for Application failure without calling the device API', async () => {
+    const store = useDemoStore();
+    store.backendOnline.value = true;
+    const searchSpy = vi.spyOn(backendApi, 'searchDevices');
+    const getDeviceSpy = vi.spyOn(backendApi, 'getDevice');
+    const { router, wrapper } = await mountFaultQuery('application-failure');
+
+    // 未激活设备用蓝牙名 (deviceName) 输入
+    await wrapper.find('textarea[aria-label="Fault SN lookup input"]').setValue('AA250862SE');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    // 植入失败不查询设备接口，直接信任用户输入
+    expect(searchSpy).not.toHaveBeenCalled();
+    expect(getDeviceSpy).not.toHaveBeenCalled();
+    expect(router.currentRoute.value.name).toBe('fault-query');
+    expect(wrapper.find('[data-test="selected-devices"]').text()).toContain('AA250862SE');
   });
 
   it('renders four application-failure slots with two required photos', async () => {

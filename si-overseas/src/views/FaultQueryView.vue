@@ -343,6 +343,14 @@ async function search() {
     serial_nos: lines,
   });
 
+  // 植入失败：设备通常未激活，接口查不到（返回为空）。直接信任用户输入的 SN / deviceName，
+  // 不调用查询接口，为每个输入构造占位设备并加入选中列表，随后走图片上传流程。
+  if (meta.value.category === 'Application failure') {
+    lines.forEach(line => addSelectedDevice(store.buildUnactivatedDevice(line)));
+    snInput.value = '';
+    return;
+  }
+
   const isMultiLine = lines.length > 1;
   const matches = await store.searchBySnLinesRemote(lines);
   lines.forEach((line, index) => resolveLine(line, index, isMultiLine, matches));

@@ -62,6 +62,15 @@ const faultCategories: FaultCategory[] = [
   'Application failure',
 ];
 
+// 解析当前故障品类（供 watchEffect 与 selectedCategory 共用）。
+// 注意：watchEffect 会在 setup 阶段同步执行，不能直接引用后面用 const 声明的 selectedCategory，
+// 因此抽成函数声明（会被提升），避免 TDZ 报错。
+function resolveSelectedCategory(): FaultCategory {
+  const category = String(route.query.category ?? '');
+  if (faultCategories.includes(category as FaultCategory)) return category as FaultCategory;
+  return store.currentFault.value?.faultCategory ?? 'Data accuracy';
+}
+
 interface VisionScenario {
   scenario: string;
   matched: boolean;
@@ -86,6 +95,13 @@ interface VerdictDisplayRow {
 
 watchEffect(() => {
   if (!store.selectedDevice.value || store.selectedDevice.value.sn !== props.sn) {
+    // 植入失败：设备未激活、接口查不到，不调用设备查询接口，直接用用户输入构造占位设备。
+    if (resolveSelectedCategory() === 'Application failure') {
+      store.selectUnactivatedDevice(props.sn);
+      routeDeviceLoading.value = false;
+      routeDeviceError.value = '';
+      return;
+    }
     routeDeviceLoading.value = true;
     routeDeviceError.value = '';
     void store.selectDeviceRemote(props.sn)
@@ -99,11 +115,7 @@ watchEffect(() => {
 });
 
 const device = computed(() => store.selectedDevice.value);
-const selectedCategory = computed<FaultCategory>(() => {
-  const category = String(route.query.category ?? '');
-  if (faultCategories.includes(category as FaultCategory)) return category as FaultCategory;
-  return store.currentFault.value?.faultCategory ?? 'Data accuracy';
-});
+const selectedCategory = computed<FaultCategory>(() => resolveSelectedCategory());
 const fault = computed(() => {
   if (store.currentFault.value) {
     return {
