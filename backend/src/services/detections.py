@@ -262,6 +262,39 @@ async def _load_cgm_inputs(
     return device, glucose, alarm
 
 
+def _unactivated_device_inputs(
+    serial_no: str,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """构造植入失败场景的占位设备数据，跳过海外设备接口查询。
+
+    植入失败 (Application failure) 场景下设备通常尚未激活，海外 API 查询不到（返回为空），
+    因此这里不再调用设备接口，直接信任用户输入的 SN / deviceName。
+    规则引擎判定植入失败时仅依赖上传的图片，不使用设备 / 血糖 / 告警数据，
+    故返回一份最小占位数据即可，仅用于回填诊断记录的设备快照。
+    """
+    device = {
+        "sn": serial_no,
+        "type": None,  # 物理板卡号未知（设备未激活）
+        "device_type": get_settings().default_device_type,
+        "status": "not_activated",
+        "device_status": 0,  # 0: 未激活
+        "fall_off_status": "not_fallen_off",
+        "wear_days": 0.0,
+        "wearHours": 0.0,
+        "activatedAt": "",
+        "lastDataAt": "",
+        "timeZone": None,
+    }
+    glucose: dict[str, Any] = {"points": [], "timezone": None}
+    alarm = {
+        "latest_alarm_status": 0,
+        "latest_sensor_internal_value": 0,
+        "abnormal_duration_minutes": 0,
+        "latest_sensor_alert": "",
+    }
+    return device, glucose, alarm
+
+
 async def create_detection(
     db: AsyncSession,
     *,
@@ -304,7 +337,8 @@ async def execute_detection(
     业务流程：
     1. 获取凭证文件及生成大模型输入路径。
     2. 获取用户的自定义判定规则阈值快照。
-    3. 并发获取海外三方系统设备的基础数据、血糖数据和告警记录。
+    3. 并发获取海外三方系统设备的基础数据、血糖数据和告警记录
+       （植入失败场景设备未激活、接口查不到，跳过查询并信任用户输入）。
     4. 可选：针对特定故障，调用 VLM 视觉大模型对用户上传的凭证图进行分析。
     5. 调用规则引擎判定诊断结果。
     6. 将所有的诊断结果、命中的规则以及完整证据链序列化并存入数据库。
@@ -331,9 +365,14 @@ async def execute_detection(
         # Step 2: 获取当前登录用户生效的指标判定阈值配置 (Threshold)
         threshold = await current_threshold(db, record.user_id)
 
-        # Step 3: 并发查询海外第三方 API (设备状态、血糖序列、告警信息)
-        client = get_cgm_client()
-        device, glucose, alarm = await _load_cgm_inputs(client, record.serial_no)
+        # Step 3: 获取设备数据 (设备状态、血糖序列、告警信息)
+        # 植入失败 (Application failure) 场景：设备尚未激活，海外 API 查询不到（返回为空），
+        # 因此不调用设备接口，直接信任用户输入的 SN / deviceName，仅走图片识别流程。
+        if record.fault_category == "Application failure":
+            device, glucose, alarm = _unactivated_device_inputs(record.serial_no)
+        else:
+            client = get_cgm_client()
+            device, glucose, alarm = await _load_cgm_inputs(client, record.serial_no)
 
         # Step 4: 根据故障品类，按需运行 VLM 大模型多模态图片识别
         vision_analysis = None
