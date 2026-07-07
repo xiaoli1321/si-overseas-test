@@ -12,6 +12,8 @@ services:
       APP_ENV: production
     env_file:
       - .env.prod
+    ports:
+      - "${API_PORT:-8000}:8000"
     restart: unless-stopped
     networks:
       - si-overseas-network
@@ -26,7 +28,7 @@ services:
       PROXY_TARGET: http://backend:8000
       PREVIEW_ALLOWED_HOSTS: ${PREVIEW_ALLOWED_HOSTS:-overseas-agent.sisensing.com}
     ports:
-      - "${PORT:-80}:4173"
+      - "${PORT:-8090}:4173"
     depends_on:
       - backend
     restart: unless-stopped
