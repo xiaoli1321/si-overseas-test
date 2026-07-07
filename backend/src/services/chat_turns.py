@@ -3,10 +3,10 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.exceptions import NotFoundError
 from src.models.tables import ChatMessage
 from src.repositories.chats import (
     create_chat_message,
+    create_chat_session,
     get_chat_session,
     update_chat_session_title_and_time,
 )
@@ -104,7 +104,10 @@ async def create_chat_turn(
 ) -> tuple[ChatMessage, ChatMessage]:
     session = await get_chat_session(db, user_id, session_id)
     if session is None:
-        raise NotFoundError("Chat session not found")
+        # Chat IDs are generated client-side; materialize the session on first
+        # turn instead of 404ing (e.g. after a DB reset or an offline create).
+        await create_chat_session(db, user_id, session_id, "New device judgment")
+        session = await get_chat_session(db, user_id, session_id)
 
     user_message = await create_chat_message(
         db,
