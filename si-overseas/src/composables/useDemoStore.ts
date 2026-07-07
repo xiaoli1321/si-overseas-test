@@ -350,6 +350,29 @@ async function selectDeviceRemote(sn: string): Promise<Device> {
   }
 }
 
+// 植入失败 (Application failure) 场景：设备通常尚未激活，海外设备接口查询不到（返回为空）。
+// 因此不调用查询接口，直接信任用户输入的 SN / deviceName，构造一份占位设备用于展示与后续检测。
+function buildUnactivatedDevice(sn: string): Device {
+  const normalized = sn.trim().toUpperCase();
+  return cacheDevice({
+    sn: normalized,
+    type: 'GS1',
+    status: 'wearing',
+    activatedAt: '',
+    wearDays: 0,
+    wearHours: 0,
+    lastDataAt: '',
+    hasServiceCard: null,
+    fault: null,
+  });
+}
+
+function selectUnactivatedDevice(sn: string): Device {
+  const device = buildUnactivatedDevice(sn);
+  selectedDevice.value = device;
+  return device;
+}
+
 function recordId(sn: string, index: number) {
   return `FD-${String(index).padStart(4, '0')}-${sn.slice(-4)}`;
 }
@@ -1246,10 +1269,11 @@ function runDetect(sn: string, selectedCategory?: FaultCategory, fileIds?: strin
 
 async function runDetectRemote(sn: string, selectedCategory?: FaultCategory, fileIds: string[] = []): Promise<DetectRecord> {
   if (!backendOnline.value) return runDetect(sn, selectedCategory, fileIds);
+  const category = selectedCategory ?? currentFault.value?.faultCategory ?? 'Data accuracy';
   try {
     const initialRecord = normalizeDetectRecord(await backendApi.createDetection(
       sn,
-      selectedCategory ?? currentFault.value?.faultCategory ?? 'Data accuracy',
+      category,
       fileIds,
     ));
     upsertRemoteRecords([initialRecord]);
@@ -1257,8 +1281,13 @@ async function runDetectRemote(sn: string, selectedCategory?: FaultCategory, fil
     const record = await pollDetectionUntilTerminal(initialRecord);
     upsertRemoteRecords([record]);
     upsertRemoteSession(record);
-    const device = await findExactDeviceBySnRemote(sn);
-    if (device) selectedDevice.value = { ...device };
+    // 植入失败：设备未激活、接口查不到，不调用设备查询接口，沿用已构造的占位设备
+    if (category === 'Application failure') {
+      selectedDevice.value = buildUnactivatedDevice(sn);
+    } else {
+      const device = await findExactDeviceBySnRemote(sn);
+      if (device) selectedDevice.value = { ...device };
+    }
     return record;
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'unknown error';
@@ -1706,6 +1735,8 @@ export function useDemoStore() {
     searchBySnLines,
     selectDevice,
     selectDeviceRemote,
+    buildUnactivatedDevice,
+    selectUnactivatedDevice,
     validateAccountCredentials,
   };
 }
