@@ -1,0 +1,352 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Shuidi CGM AI Agent API",
+    "version": "1.0.0",
+    "description": "水滴平台对接 AI Agent 用于查询设备列表与详情的接口文档，可直接导入 Apifox 中进行手动调试。"
+  },
+  "servers": [
+    {
+      "url": "https://api.sibionics.com",
+      "description": "正式环境（示例，请根据实际网关或服务域名修改）"
+    }
+  ],
+  "paths": {
+    "/external-shuidi/cgm/aiAgent/device/list": {
+      "post": {
+        "summary": "4.16 根据手机号查询设备列表",
+        "description": "根据登录态上下文或鉴权手机号获取用户的 CGM 设备列表。",
+        "parameters": [
+          {
+            "name": "X-App-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "第三方系统应用 ID"
+          },
+          {
+            "name": "X-Sign",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "接口签名"
+          },
+          {
+            "name": "X-Timestamp",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "请求时间戳 (毫秒)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "beginTime": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "开始时间戳 (毫秒)",
+                    "example": 1721221862000
+                  },
+                  "endTime": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "结束时间戳 (毫秒)",
+                    "example": 1752757862497
+                  },
+                  "deviceModel": {
+                    "type": "integer",
+                    "description": "设备型号 (2: GS1)",
+                    "example": 2
+                  }
+                },
+                "required": [
+                  "beginTime",
+                  "endTime",
+                  "deviceModel"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功返回设备列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "成功"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "phone": {
+                          "type": "string",
+                          "example": "13500050743"
+                        },
+                        "deviceList": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "serialNo": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": "240112NNG9672DAE58"
+                              },
+                              "deviceId": {
+                                "type": "integer",
+                                "format": "int64",
+                                "example": 1829455150176362604
+                              },
+                              "index": {
+                                "type": "integer",
+                                "example": 20160
+                              },
+                              "blueToothNum": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "deviceName": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "enableTime": {
+                                "type": "integer",
+                                "format": "int64",
+                                "nullable": true
+                              },
+                              "status": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "connectionCode": {
+                                "type": "string",
+                                "example": "CS24050001"
+                              },
+                              "identifyCode": {
+                                "type": "string",
+                                "example": "7DJ1PP2KUS5J6H"
+                              },
+                              "activeTimeECO": {
+                                "type": "string",
+                                "example": "1723805564000"
+                              },
+                              "statusECO": {
+                                "type": "integer",
+                                "example": 2
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/external-shuidi/cgm/aiAgent/device/detail": {
+      "post": {
+        "summary": "4.17 根据设备ID查询设备详细信息",
+        "description": "使用 4.16 返回的 deviceId 获取设备的血糖时序和告警状态数据。",
+        "parameters": [
+          {
+            "name": "X-App-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "第三方系统应用 ID"
+          },
+          {
+            "name": "X-Sign",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "接口签名"
+          },
+          {
+            "name": "X-Timestamp",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "请求时间戳 (毫秒)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deviceId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "设备唯一 ID (来自于 4.16 接口)",
+                    "example": 1829455150176362604
+                  },
+                  "deviceModel": {
+                    "type": "integer",
+                    "description": "设备型号 (2: GS1)",
+                    "example": 2
+                  }
+                },
+                "required": [
+                  "deviceId",
+                  "deviceModel"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功返回设备详细数据",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "timestamp": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "成功"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "glucoseInfo": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "t": {
+                                "type": "integer",
+                                "format": "int64",
+                                "description": "毫秒时间戳",
+                                "example": 1723806880000
+                              },
+                              "v": {
+                                "type": "number",
+                                "format": "float",
+                                "description": "血糖值 (mmol/L)",
+                                "example": 7.2
+                              },
+                              "i": {
+                                "type": "integer",
+                                "description": "采样点索引",
+                                "example": 60
+                              },
+                              "s": {
+                                "type": "integer",
+                                "description": "状态码",
+                                "example": -1
+                              },
+                              "ast": {
+                                "type": "integer",
+                                "description": "报警状态码",
+                                "example": 1
+                              },
+                              "effective": {
+                                "type": "boolean",
+                                "example": true
+                              }
+                            }
+                          }
+                        },
+                        "index": {
+                          "type": "integer",
+                          "example": 20160
+                        },
+                        "blueToothNum": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "deviceName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "enableTime": {
+                          "type": "integer",
+                          "format": "int64",
+                          "nullable": true
+                        },
+                        "status": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "connectionCode": {
+                          "type": "string",
+                          "example": "CS24050001"
+                        },
+                        "identifyCode": {
+                          "type": "string",
+                          "example": "7DJ1PP2KUS5J6H"
+                        },
+                        "activeTimeECO": {
+                          "type": "string",
+                          "example": "1723805564000"
+                        },
+                        "statusECO": {
+                          "type": "integer",
+                          "example": 2
+                        }
+                      }
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

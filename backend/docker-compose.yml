@@ -1,0 +1,36 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    container_name: cgm-agent-api
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/cgm_agent
+      JWT_SECRET_KEY: dev-secret-change-me
+      AUTO_CREATE_TABLES: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./.env:/app/.env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16
+    container_name: cgm-agent-mvp-db
+    environment:
+      POSTGRES_DB: cgm_agent
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - cgm-agent-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cgm_agent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  cgm-agent-db-data:

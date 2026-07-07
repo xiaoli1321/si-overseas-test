@@ -1,0 +1,79 @@
+/* ============================================================
+ * Design Tokens & Global Styles
+ * ============================================================ */
+
+:root {
+  /* --- Spacing scale --- */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+
+  /* --- Font size scale --- */
+  --text-xs: 0.72rem;
+  --text-sm: 0.82rem;
+  --text-base: 0.92rem;
+  --text-lg: 1.04rem;
+  --text-xl: 1.24rem;
+
+  /* --- Layout --- */
+  --content-max: min(1040px, calc(100vw - var(--space-xl)));
+  --page-padding: var(--space-lg);
+  --card-padding: var(--space-lg);
+}
+
+/* Tablet */
+@media (max-width: 768px) {
+  :root {
+    --page-padding: var(--space-md);
+    --card-padding: var(--space-md);
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  :root {
+    --page-padding: var(--space-sm);
+    --card-padding: var(--space-sm);
+  }
+}
+
+/* Touch: prevent iOS zoom on input focus */
+@media (max-width: 480px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hover-lift {
+  transition: transform 0.2s ease;
+}
+
+@media (hover: hover) {
+  .card:hover,
+  .device-card:hover:not(.device-card--locked),
+  .category-card:hover,
+  .agent-fault-entry-card:hover,
+  .chat-fault-option:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* Touch: remove hover transforms on devices without hover */
+@media (hover: none) {
+  .card:hover,
+  .device-card:hover:not(.device-card--locked),
+  .category-card:hover,
+  .agent-fault-entry-card:hover,
+  .chat-fault-option:hover {
+    transform: none !important;
+  }
+}

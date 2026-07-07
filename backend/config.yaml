@@ -1,0 +1,524 @@
+# ==============================================================================
+# 海外 CGM Agent 全局配置
+# ==============================================================================
+
+# 1. 基础应用与基础设施设置
+app:
+  log_level: "DEBUG"
+  upload_dir: "uploads"
+  cors_origins:
+    - "*" # 生产环境中需更新此处
+  database_url: "postgresql+asyncpg://postgres:postgres@127.0.0.1:5433/cgm_agent"
+  auto_create_tables: true
+
+# 2. 认证与安全配置
+security:
+  jwt_secret_key: "dev-secret-change-me-32chars-minimum-length-for-jwt-security"
+  jwt_algorithm: "HS256"
+  access_token_expire_minutes: 480
+
+# 3. 种子数据/测试数据默认值
+seeding:
+  seed_user_email: "christest@sibionics.com"
+  seed_user_password: "password123"
+
+# 4. 设备与验证参数
+device:
+  default_device_type: "GS1"
+  sn_regex_pattern: "[A-Z0-9]{10,20}"
+
+# 5. 意图分类 AI Agent 提示词与兜底关键词
+agent:
+  system_prompt_path: "prompts/agent/agent_system_prompt.jinja2"
+  unrelated_card_prompt_turns: 3
+  keywords:
+    "Application failure": "assembly needle launch electrode applicator insert photo"
+    "Sensor falling off": "fall off detached loose peel fell"
+    "Sensor Abnormal": "abnormal error warm-up warmup replace device recovery"
+    "Data accuracy": "accuracy inaccurate bgm low fluctuation jump glucose"
+
+# 6. VLM 多模态大模型分析设置与提示词
+vlm:
+  dashscope_api_key: "${DASHSCOPE_API_KEY}"
+  vlm_base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  vlm_enabled: true
+  vlm_max_retries: 2
+  intent_model: "qwen-plus"
+  vlm_model: "qwen-vl-max"
+  prompt_version: "application-failure-v1"
+  system_prompt_glucose_path: "prompts/scanner/vlm_system_prompt_glucose.jinja2"
+
+# 7. 规则引擎默认阈值
+thresholds:
+  data_accuracy_abs_threshold: 0.83
+  default_profile:
+    rules:
+      inaccuracy:
+        lowPersist:
+          belowMmol: 2.8
+          minHours: 4
+          max24hMmol: 7.8
+        noFluctuation:
+          floorMmol: 4.5
+          minHours: 8
+          maxSwingMmol: 1.0
+        jump:
+          deltaMmol: 3.0
+          consecutive: 3
+        deviation: # 数据偏差校验规则（对比指血与血糖仪）
+          within48hDeviationMmol: 7.0 # 激活48小时内，CGM与指血(BGM)的绝对偏差阈值（单位：mmol/L，达到或超过该值判为异常）
+          within48hPairCount: 2 # 激活48小时内，要求上传的对比图片组数（每组包含一张CGM截图和一张指血照片）
+          within48hQualifiedPairCount: 2 # 激活48小时内，要求达到异常偏差阈值的最小组数（满足此组数判定为异常，准予换新）
+          after48hDeviationRangePct: 20 # 激活48小时后，正常/高血糖区间（> 判定分界线）的相对偏差阈值百分比（单位：%，达到或超过该值判为异常）//前端ui没改
+          after48hDeviationRangeBoundary: 4.4 # 激活48小时后，区分低血糖与正常/高血糖区间的判定分界线（单位：mmol/L） 前端ui没改
+          after48hDeviationMmol: 0.83 # 激活48小时后，低血糖区间（<= 判定分界线）的绝对偏差阈值（单位：mmol/L，达到或超过该值判为异常）前端UI没改
+          after48hPairCount: 2 # 激活48小时后，要求上传的对比图片组数
+          after48hQualifiedPairCount: 2 # 激活48小时后，要求达到异常偏差阈值的最小组数（满足此组数判定为异常，准予换新）
+          after48hWearDays: 2 # 佩戴天数界限（单位：天，低于此值走48h内逻辑，大于等于此值走48h外逻辑）
+      deviceAbnormal:
+        wearDays: 0
+        temporaryAbnormalHours: 3 # 暂时异常（status=6）持续时长阈值，单位：小时，超过此值允许售后
+        warmupMinutes: 60 # 设备激活后预热时长阈值，单位：分钟；status=4/5 在此时长内判定为初始化异常
+        waitingRecoveryHours: 3 # 传感器异常等待恢复时长阈值，单位：小时；status=1且alarm=2 超过此时长判定为恢复可能性很小
+      detachment:
+        detachedStatusValue: 1
+        wearDays: 14
+      applicationFailure:
+        photoCount: 2
+        afterSalesScore: 8
+        manualReviewScore: 5
+
+# 8. 海外 API 基础配置与端点设置
+# 敏感凭据（用户名/密码）从环境变量读取，不在此文件中硬编码。
+# 本地开发 / PRE 测试环境：在 .env 中设置对应变量即可。
+# 生产环境：通过部署平台的环境变量或 secrets 管理注入。
+overseas_api:
+  enabled: true # 设置为 true 则调用 live 真实 API，为 false 则回退至 mock 逻辑
+  login_url: "${OVERSEAS_API_LOGIN_URL}"
+  base_url: "${OVERSEAS_API_BASE_URL}"
+  device_detail_path: "/system/expand/oversea/deviceDetail"
+  username: "${OVERSEAS_API_USERNAME}"
+  password: "${OVERSEAS_API_PASSWORD}"
+  request_timeout_seconds: 15.0
+  search_concurrency: 5
+  cache_ttl_seconds: 300
+  negative_cache_ttl_seconds: 60
+
+# 9. Verdict 标准案例说明模板
+# 文案来源于业务标准案例文档；模板由后端配置维护，API 实时渲染，不写入数据库。
+verdict_presentation:
+  enabled: true
+  template_version: "standard-cases-v1"
+  templates:
+    # ── Data accuracy: first-pass screening ──
+    data_accuracy.first_pass.path_switching:
+      badge: "/"
+      title: "/"
+      summary: "/"
+      whatWeFound: "/"
+      whyThisResult: "/"
+      possibleCauses: "/"
+      supportingMaterials: "Not displayed"
+      guidance:
+        text: "Cannot directly enter after-sales based on the first round curve results; Enter the blood sugar deviation judgment and continue taking screenshots for comparison."
+    data_accuracy.first_pass.persistent_low:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Persistent Low Glucose Detected"
+      summary: 'The glucose curve has been low recently, please see "Basis for the Verdict" below for details'
+      whatWeFound: "Persistent-low pattern was detected. Low {low_hours} h below {below_mmol} mmol/L, 24h peak {peak_24h_mmol} mmol/L after 48h"
+      whyThisResult: "Persistent-low after-sales rule is met. Low <= {below_mmol} for {min_hours}h, 24h peak <= {max_24h_mmol}. Current record meets all thresholds"
+      possibleCauses: "Sensor has been scratched or bumped, causing it to loosen, or the electrode has not been fully inserted into the subcutaneous tissue."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "The first-pass CGM screening hit the persistent low rule for this record, so the issue can move forward without the paired screenshot branch."
+        wearingAdvice: "Keep wearing the device unless it has already fallen off or support instructs removal."
+        nextAction: "Continue to the after-sales application with this screening result."
+    data_accuracy.first_pass.no_fluctuation:
+      badge: "WARRANTY ELIGIBLE"
+      title: "No Fluctuation Detected"
+      summary: 'The recent blood glucose curve shows a long gentle range with minimal change. For details, see "Basis for the Verdict" below'
+      whatWeFound: "No-fluctuation pattern was detected. Flat {flat_hours}h, Swing about {swing_mmol} mmol/L. after 48h"
+      whyThisResult: "No-fluctuation after-sales rule is met. Needs >= {floor_mmol} for {no_fluc_min_hours}h, Swing <= {max_swing_mmol}mmol/L. Current record matches the flat-line rule"
+      possibleCauses: ""
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "The first-pass CGM screening hit the no fluctuation rule for this record, so the issue can move forward without the paired screenshot branch."
+        wearingAdvice: "Keep wearing the device unless it has already fallen off or support instructs removal."
+        nextAction: "Continue to the after-sales application with this screening result."
+    data_accuracy.first_pass.jump_points:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Glucose Jump Pattern Detected"
+      summary: "The recent blood glucose curve showed repeated jumping points within the screening window."
+      whatWeFound: "Jump-point pattern was detected. Max step {max_step_mmol} mmol/L, Consecutive jumps {consecutive_jumps} after 48h"
+      whyThisResult: "Jump-point after-sales rule is met. Adjacent jump > {delta_mmol}, At least {min_consecutive} consecutive steps. Current record matches the jump rule"
+      possibleCauses: "The tissue around the sensor moves, resulting in some changes in the soft needle in the implanted part, and small probability events such as sensor loosening cannot be ruled out in some specific cases"
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "The first-pass CGM screening hit the jump points rule for this record, so the issue can move forward without the paired screenshot branch."
+        wearingAdvice: "Keep wearing the device unless it has already fallen off or support instructs removal."
+        nextAction: "Continue to the after-sales application with this screening result."
+
+    # ── Data accuracy: paired screenshot comparison ──
+    data_accuracy.paired.within_48_outside_range:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Data deviation detected"
+      summary: "Device is within 48h of activation. The paired CGM and fingerstick screenshots hit the Large-bias check within 48h rule."
+      whatWeFound: "OCR completed screenshot pair extraction. P1 {pair1_cgm} vs {pair1_bgm}, P2 {pair2_cgm} vs {pair2_bgm}. {failed_pair_count}/{pair_count} pairs out of band. Timing valid"
+      whyThisResult: "Within-48h deviation rule is met. Abs diff <= {within_48h_deviation_mmol} mmol/L, Reject at {within_48h_pair_count} failed pairs. Current pair set reaches reject threshold"
+      possibleCauses: "CGM application creates a tiny wound. During healing, immune activity may affect nearby glucose and cause temporary reading deviations. This is the adjustment period. After it passes, readings usually become more stable and accurate."
+      supportingMaterials:
+        - "Pair 1 - CGM screenshot"
+        - "Pair 1 - meter photo"
+        - "Pair 2 - CGM screenshot"
+        - "Pair 2 - meter photo"
+        - "Screenshot timing"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "The paired CGM and fingerstick screenshots exceed the <= 7.0 mmol/L rule within the first 48 hours of wear."
+        wearingAdvice: "Guide users to continue wearing the device and monitoring the data, or guide them to remove it and make a replacement to them."
+        nextAction: "If you decide to replace the device for the user, you can guide them to remove it."
+    data_accuracy.paired.within_48_within_range:
+      badge: "NOT WARRANTY ELIGIBLE"
+      title: "Accuracy check within 48h not detected"
+      summary: "The device is within 48h of activation. The current screenshot pairing is still within the allowed range."
+      whatWeFound: "OCR pairing completed; display whether each set of values is in band and whether the time is independent."
+      whyThisResult: "Failure to meet the failure threshold of > 7 mmol/L required for at least 2 sets of comparison charts."
+      possibleCauses: ""
+      supportingMaterials:
+        - "Pair 1 - CGM screenshot"
+        - "Pair 1 - meter photo"
+        - "Pair 2 - CGM screenshot"
+        - "Pair 2 - meter photo"
+        - "Screenshot timing"
+      guidance:
+        text: "Cannot follow the data deviation path to enter after-sales service; if you still suspect the deviation, upload a more matching screenshot."
+    data_accuracy.paired.after_48_outside_range:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Data deviation detected"
+      summary: "The device is after 48h of activation. The paired CGM and fingerstick screenshots hit the Accuracy check after 48h rule."
+      whatWeFound: "OCR completed screenshot pair extraction. P1 {pair1_cgm} vs {pair1_bgm}, P2 {pair2_cgm} vs {pair2_bgm}. {failed_pair_count}/{pair_count} pairs out of band. Timing valid"
+      whyThisResult: "Accuracy check after 48h is met. Rule: 2/2 pairs must fail strict 20% consistency. Current pair set fails the strict 20% consistency check in both pairs."
+      possibleCauses: "CGM measures glucose in interstitial fluid, while BGM measures glucose in capillary blood. When glucose changes quickly, the difference between the two can be larger, so CGM accuracy cannot be assessed accurately."
+      supportingMaterials:
+        - "Pair 1 - CGM screenshot"
+        - "Pair 1 - meter photo"
+        - "Pair 2 - CGM screenshot"
+        - "Pair 2 - meter photo"
+        - "Screenshot timing"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "Both sets of comparative data exceeded the set range and met the after-sales conditions."
+        wearingAdvice: "Guide users to continue wearing the device and monitoring the data, or guide them to remove it and make a replacement to them."
+        nextAction: "If you decide to replace the device for the user, you can guide them to remove it."
+    data_accuracy.paired.after_48_within_range:
+      badge: "NOT WARRANTY ELIGIBLE"
+      title: "Accuracy check after 48h not detected"
+      summary: "Device snapshot is After 48h of activation. The reviewed CGM and fingerstick pairs stay inside the current review rule."
+      whatWeFound: "OCR completed screenshot pair extraction. Stage After 48h of activation, P1 {pair1_cgm} vs {pair1_bgm}, P2 {pair2_cgm} vs {pair2_bgm}. All pairs stayed in band. Timing valid"
+      whyThisResult: "OCR completed screenshot pair extraction."
+      possibleCauses: 'The clinical evaluation of the accuracy of CGM is mainly evaluated through the "reference value 20/20% agreement rate", that is, when the monitoring value is > 4.4 mmol/L, the deviation from the reference value is within the range of +/- 20%; When the monitoring value is <= 4.4 mmol/L, the deviation is 1.1 mmol/L; The proportion of points deviating from the reference value is > 65%, which is the technical standard requirement of CGM.'
+      supportingMaterials:
+        - "Pair 1 - CGM screenshot"
+        - "Pair 1 - meter photo"
+        - "Pair 2 - CGM screenshot"
+        - "Pair 2 - meter photo"
+        - "Screenshot timing"
+      guidance:
+        afterSalesStatus: "Do not continue to after-sales on the data-deviation path."
+        why: "Neither of the two sets meets the condition that the comparison data exceeds the set range, so the current record does not meet this rule."
+        wearingAdvice: "Continue normal wear guidance and keep the sensor in place unless support instructs removal."
+        nextAction: "If mismatch is still a concern, upload a new set of timestamp-matched CGM and fingerstick screenshots for another review."
+
+    # ── Fall off ──
+    fall_off.detected:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Fall off detected"
+      summary: "The record shows a sensor fall-off pattern, and the device is already in an abnormal state."
+      whatWeFound: "Abnormal detachment-like state is present. State {device_status}. Anomaly {anomaly_time}. Last Upload {last_upload}. Wear {wear_duration}"
+      whyThisResult: "Detachment after-sales rule is met. Needs abnormal state. Needs anomaly or upload break. Current record matches both."
+      possibleCauses: "Do not wear reinforcement stickers, encounter collisions, scratches, sweating, etc."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "The device is already in an abnormal state and the fall off path rule is satisfied by the current telemetry."
+        wearingAdvice: "Do not try to reattach the sensor if it has already fallen off. Please remind users to keep the wearing area completely dry when wearing the product, and avoid strenuous exercise and abrasions. Wearing a reinforcing brace is also recommended."
+        nextAction: "Continue to the after-sales application with this record."
+    fall_off.not_detected:
+      badge: "NOT WARRANTY ELIGIBLE"
+      title: "Fall off not detected"
+      summary: "The current record does not show a confirmed sensor fall-off pattern."
+      whatWeFound: "No confirmed detachment signal is present. State {device_status}. Last Upload {last_upload}"
+      whyThisResult: "Detachment after-sales rule is not met. This path only accepts abnormal devices. Current state is {device_status}"
+      possibleCauses: ""
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "Do not continue to after-sales on the fall off path. If the user has provided a picture of the device falling off, please make a manual judgment."
+        why: "The current record does not show the abnormal device state required by the fall off rule."
+        wearingAdvice: "Keep monitoring the device status in the app. If the user has provided a picture of the device falling off, please make a manual judgment."
+        nextAction: "If the user provides photos proving the detachment, please consider the after-sales policy to decide whether to replace the product."
+
+    # ── Sensor abnormality ──
+    sensor_abnormal.no_abnormality:
+      badge: "NOT WARRANTY ELIGIBLE"
+      title: "No abnormality detected"
+      summary: "No abnormal sensor status is currently detected on this device, so after-sales support is not available."
+      whatWeFound: "The current device entered the sensor abnormality review, but no abnormal conclusion was formed; display the current stage, status / clasp status, and latest signal time."
+      whyThisResult: "The confirmed sensor abnormality rule is not hit."
+      possibleCauses: ""
+      supportingMaterials: "Not displayed"
+      guidance:
+        text: "No abnormal state of the device has been detected, please make a manual judgment based on the specific display of the screenshot on the homepage of the user APP."
+    sensor_abnormal.gs1_initialization:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Initialization abnormality"
+      summary: "The device shows an abnormality during the initialization stage."
+      whatWeFound: "The device is currently detected to be in the initialization abnormal stage. The initialization abnormality time is {abnormal_time}."
+      whyThisResult: "Initialization-abnormality rule is met. Abnormality happened during initialization. Current stage Initialization abnormality"
+      possibleCauses: "It may be that after the device was applied, the guide needle did not fully cover the filament, so the filament was not completely inserted under the skin and could not monitor the glucose concentration in the interstitial fluid."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "The current device matches the initialization-abnormality rule, so this record supports after-sales on the sensor-abnormality path."
+        wearingAdvice: "This device is no longer usable. Please guide the user to properly remove the sensor. Remind users to wear the sensors according to the video."
+        nextAction: "Provide after-sales service for this device."
+    sensor_abnormal.gs1_after_warmup:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Abnormal after Warm-up"
+      summary: "Keep wearing the device unless it has already fallen off or support instructs removal."
+      whatWeFound: "An abnormal status has been detected on the current device, and the abnormality occurred at {abnormal_time}."
+      whyThisResult: "The in-use sensor-fault rule is met. Sustained abnormality is outside initialization"
+      possibleCauses: "This may be caused by certain low-probability situations, such as sensor loosening. It may also happen when the insertion site has relatively rich muscle tissue, and muscle stretching affects the sensor filament."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "The current device matches the in-use abnormality, so this record supports after-sales on the sensor-abnormality path."
+        wearingAdvice: "This device is no longer usable. Please guide the user to properly remove the sensor. Remind users to avoid scratching or rubbing the device, and to avoid collisions and strenuous exercise."
+        nextAction: "Provide after-sales service for this device."
+    sensor_abnormal.waiting_recovery:
+      badge: "PENDING REVIEW"
+      title: "Temporary sensor abnormality"
+      summary: "Temporary sensor abnormality, please check again in 3 hours to see whether it has returned to normal."
+      whatWeFound: "A temporary abnormal sensor status was detected, and the abnormality occurred at {abnormal_time}."
+      whyThisResult: "This meets the rule of waiting 3 hours to check whether the device returns to normal. The device is currently recovering on its own, so please wait patiently for 3 hours and observe whether it returns to normal."
+      possibleCauses: "This may be a rare issue caused by scratching or impact that loosens the sensor. It may also occur when muscle tissue at the insertion site is relatively abundant and muscle stretching affects the sensor electrode, which then impacts data transmission, so the system identifies it as abnormal."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "Do not go to after-sales yet."
+        why: "The device is still inside the recovery observation window, so the current result is not a confirmed fault."
+        wearingAdvice: "Please advise the user to continue wearing the device and wait at least 3 hours to check if the condition has returned to normal."
+        nextAction: "Wait for the recovery window to pass, then run detection again."
+    sensor_abnormal.low_recovery_possibility:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Abnormal after Warm-up"
+      summary: "Keep wearing the device unless it has already fallen off or support instructs removal."
+      whatWeFound: "An abnormal status has been detected on the current device, and the abnormality occurred at {abnormal_time}."
+      whyThisResult: "The recovery observation period has passed and the sensor did not recover. Sustained abnormality is outside the initialization stage."
+      possibleCauses: "This may be caused by certain low-probability situations, such as sensor loosening. It may also happen when the implanted site contains rich muscle tissue or when muscle stretching affects the sensor electrode, which then impacts data transmission."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "The current device matches the low recovery possibility abnormality, so this record supports after-sales on the sensor-abnormality path."
+        wearingAdvice: "This device is no longer usable. Please guide the user to properly remove the sensor. Remind users to avoid scratching or rubbing the device, and to avoid collisions and strenuous exercise."
+        nextAction: "Provide after-sales service for this device."
+
+    # ── Sensor abnormality: GS1 ECO ──
+    sensor_abnormal.gs1_eco_init_failed:
+      badge: "CHECK AND RETRY"
+      title: "Initialization failed. Please re-clasp and reactivate."
+      summary: "Initialization failed. Please re-clasp and reactivate."
+      whatWeFound: "The current device has been detected with the sensor not fully snapped into place, resulting in device initialization failure. The current activation count is {activation_count}."
+      whyThisResult: "Initialization failed. Please re-clasp and reactivate. Current record still allows another activation attempt. Guide the wearer to re-clasp before using after-sales"
+      possibleCauses: "This situation is mainly caused by the transmitter and sensor not being properly snapped together, so the data during the initialization stage was not uploaded correctly."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "Do not go to after-sales yet."
+        why: "Initialization failed. Please re-clasp and reactivate. This device is still inside the retryable initialization path."
+        wearingAdvice: "Check the clasp tutorial on the app home page, then manually start reactivation."
+        nextAction: "Re-clasp and reactivate the device from the app."
+    sensor_abnormal.gs1_eco_waiting_recovery:
+      badge: "PENDING REVIEW"
+      title: "Temporary sensor abnormality"
+      summary: "Temporary sensor abnormality, please check again in 3 hours to see whether it has returned to normal."
+      whatWeFound: "A temporary abnormal sensor status was detected, and the abnormality occurred at {abnormal_time}."
+      whyThisResult: "This meets the rule of waiting 3 hours to check whether the device returns to normal. The device is currently recovering on its own, so please wait patiently for 3 hours and observe whether it returns to normal."
+      possibleCauses: "Caused by scratching or impact that loosens the sensor. It may also occur when muscle tissue at the insertion site is relatively abundant and muscle stretching affects the sensor electrode, which then impacts data transmission, so the system identifies it as abnormal."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "Do not go to after-sales yet."
+        why: "The device is still inside the recovery observation window, so the current result is not a confirmed fault."
+        wearingAdvice: "Keep wearing the device and wait patiently for 3 hours to observe whether the device returns to normal."
+        nextAction: "Wait for the recovery window to pass, then run detection again."
+    sensor_abnormal.gs1_eco_data_time_exception:
+      badge: "CHECK AND RETRY"
+      title: "DATA TIME EXCEPTION"
+      summary: "The transmitter was removed during wearing (battery replacement or other scenes), but the transmitter was not buckled back within 15 minutes, can be solved by clearing the cache"
+      whatWeFound: "No other abnormality detected in the background."
+      whyThisResult: "Remove the transmitter and replace the battery during wearing; Take off the launcher and do not catch it within 15 minutes after completing the operation"
+      possibleCauses: "Remove the transmitter and replace the battery during wearing; Take off the launcher and do not catch it within 15 minutes after completing the operation"
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "Do not go to after-sales yet."
+        why: "The device is still inside the recovery observation window, so the current result is not a confirmed fault."
+        wearingAdvice: "Keep wearing the device and clear the cache, restart the APP, and reconnect to the historical device to check whether it is restored."
+        nextAction: "Wait for the recovery window to pass, then run detection again."
+    sensor_abnormal.gs1_eco_probe_failure:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Probe failure"
+      summary: "The current sensor has failed and cannot be reactivated."
+      whatWeFound: "When the device sensor is already abnormal and has been activated {activation_count} times, the clasp still remains unfastened."
+      whyThisResult: "Probe failure. Please contact customer service. The current record no longer supports another activation. This case is treated as abnormal and can proceed to after-sales"
+      possibleCauses: "The soft needle is bent, possibly because it was not inserted perpendicularly to the skin. If the soft needle stands upright, it may be a problem with the device."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "Sensor failure. The disposable probe has failed and cannot recover."
+        wearingAdvice: "When pressing the transmitter button, do not use excessive force on the application site. Simply place the blue applicator lightly against the skin at the application site, then gently press the transmitter button."
+        nextAction: "Continue to the after-sales or customer-service flow with this record."
+
+    # ── Application failure ──
+    application_failure.assembly_failure:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Application failure {subtype} detected"
+      summary: "The uploaded photos match an implantation-failure pattern."
+      whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
+      whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
+      possibleCauses: "Assembly not being done on a firm, flat surface or not pressed down firmly enough."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
+        wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
+        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+    application_failure.guide_needle_retention:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Application failure {subtype} detected"
+      summary: "The uploaded photos match an implantation-failure pattern."
+      whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
+      whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
+      possibleCauses: "The safety clip was removed during assembly of the Sensor pack applicator and applicator, or assembly was attempted after the insertion needle had already been deployed."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
+        wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
+        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+    application_failure.early_launches:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Application failure {subtype} detected"
+      summary: "The uploaded photos match an implantation-failure pattern."
+      whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
+      whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
+      possibleCauses: "The safety clip was removed prematurely, and the device was pressed for pickup and launched for application again."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
+        wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
+        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+    application_failure.sensor_falling_out:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Application failure {subtype} detected"
+      summary: "The uploaded photos match an implantation-failure pattern."
+      whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
+      whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
+      possibleCauses: "The internal components became loose or shifted during the transportation process"
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
+        wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
+        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+    application_failure.adhesion_failure:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Application failure {subtype} detected"
+      summary: "The uploaded photos match an implantation-failure pattern."
+      whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
+      whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
+      possibleCauses: "The applicator component fits more tightly than expected, making it difficult to separate the applicator from the sensor."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
+        wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
+        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+    application_failure.exposed_electrodes:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Application failure {subtype} detected"
+      summary: "The uploaded photos match an implantation-failure pattern."
+      whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
+      whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
+      possibleCauses: "Excessive force during application may have depressed the surrounding skin and caused incomplete insertion of the needle and electrodes."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
+        wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
+        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+    application_failure.implanter_damage:
+      badge: "WARRANTY ELIGIBLE"
+      title: "Application failure {subtype} detected"
+      summary: "The uploaded photos match an implantation-failure pattern."
+      whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
+      whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
+      possibleCauses: "The implanter casing was cracked or mechanically deformed during the process."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "You can continue to after-sales from this result."
+        why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
+        wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
+        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+    application_failure.insufficient_images:
+      badge: "PENDING REVIEW"
+      title: "Application failure not detected"
+      summary: "The currently uploaded image does not show a clear issue with implantation failure."
+      whatWeFound: "VLM has reviewed the pictures, but has not yet formed a passable subtype. Current photo count is {photo_count}."
+      whyThisResult: "The number of images is insufficient. Rule requires >= {app_photo_count} photos. Current: {photo_count} photos."
+      possibleCauses: "Current evidence is insufficient to confirm implantation failure."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "Cannot enter after-sales via the Application failure path; upload clearer pictures or switch to a more matching path."
+        why: "The currently uploaded image does not meet the requirements for automatic after-sales of implantation failure."
+        wearingAdvice: "Please check the user's operation process and confirm if they followed the instructions."
+        nextAction: "Upload clearer pictures or guide the user to provide correct proof."
+    application_failure.invalid_evidence:
+      badge: "NOT WARRANTY ELIGIBLE"
+      title: "Application failure not detected"
+      summary: "The currently uploaded image does not show a clear issue with implantation failure."
+      whatWeFound: "VLM has reviewed the pictures, but has not yet formed a passable subtype; display picture descriptions and material scores. Detail: {vlm_reason}. Score {score} / 10."
+      whyThisResult: "The number of images is insufficient, the material score is insufficient, or the subtype is still unclear. Rule requires >= {app_photo_count} photos and score >= {app_after_sales_score}. Current: {photo_count} photos, score {score}."
+      possibleCauses: "Current evidence is insufficient to confirm implantation failure."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "Cannot enter after-sales via the Application failure path; upload clearer pictures or switch to a more matching path."
+        why: "The currently uploaded image does not meet the requirements for automatic after-sales of implantation failure."
+        wearingAdvice: "Please check the user's operation process and confirm if they followed the instructions."
+        nextAction: "Upload clearer pictures or guide the user to provide correct proof."
+    application_failure.reproduced_evidence:
+      badge: "NOT WARRANTY ELIGIBLE"
+      title: "Application failure not detected"
+      summary: "The currently uploaded image does not show a clear issue with implantation failure."
+      whatWeFound: "VLM has reviewed the pictures, but has not yet formed a passable subtype; display picture descriptions and material scores. Detail: {vlm_reason}. Score {score} / 10."
+      whyThisResult: "The number of images is insufficient, the material score is insufficient, or the subtype is still unclear. Rule requires >= {app_photo_count} photos and score >= {app_after_sales_score}. Current: {photo_count} photos, score {score}."
+      possibleCauses: "Current evidence is insufficient to confirm implantation failure."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "Cannot enter after-sales via the Application failure path; upload clearer pictures or switch to a more matching path."
+        why: "The currently uploaded image does not meet the requirements for automatic after-sales of implantation failure."
+        wearingAdvice: "Please check the user's operation process and confirm if they followed the instructions."
+        nextAction: "Upload clearer pictures or guide the user to provide correct proof."
+    application_failure.no_application_failure:
+      badge: "NOT WARRANTY ELIGIBLE"
+      title: "Application failure not detected"
+      summary: "The currently uploaded image does not show a clear issue with implantation failure."
+      whatWeFound: "VLM has reviewed the pictures, but has not yet formed a passable subtype; display picture descriptions and material scores. Detail: {vlm_reason}. Score {score} / 10."
+      whyThisResult: "The number of images is insufficient, the material score is insufficient, or the subtype is still unclear. Rule requires >= {app_photo_count} photos and score >= {app_after_sales_score}. Current: {photo_count} photos, score {score}."
+      possibleCauses: "Current evidence is insufficient to confirm implantation failure."
+      supportingMaterials: "Not displayed"
+      guidance:
+        afterSalesStatus: "Cannot enter after-sales via the Application failure path; upload clearer pictures or switch to a more matching path."
+        why: "The currently uploaded image does not meet the requirements for automatic after-sales of implantation failure."
+        wearingAdvice: "Please check the user's operation process and confirm if they followed the instructions."
+        nextAction: "Upload clearer pictures or guide the user to provide correct proof."

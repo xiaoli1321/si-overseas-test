@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.tmp/
+.vite-cache/
+*.tsbuildinfo
+~$*
+
+# Stale transpiled artifacts that should not be deployed
+src/**/*.vue.js
+src/**/*.test.js

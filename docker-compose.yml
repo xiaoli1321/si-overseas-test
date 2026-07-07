@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:16
+    container_name: si-overseas-db
+    environment:
+      POSTGRES_DB: si-overseas
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - si-overseas-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d si-overseas"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - si-overseas-network
+
+  api:
+    image: si-overseas-backend:latest
+    container_name: si-overseas-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/cgm_agent
+      JWT_SECRET_KEY: dev-secret-change-me
+      AUTO_CREATE_TABLES: "true"
+    volumes:
+      - ./backend/.env:/app/.env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - si-overseas-network
+
+  frontend:
+    image: si-overseas-frontend:latest
+    container_name: si-overseas-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - si-overseas-network
+
+volumes:
+  si-overseas-db-data:
+
+networks:
+  si-overseas-network:
+    driver: bridge

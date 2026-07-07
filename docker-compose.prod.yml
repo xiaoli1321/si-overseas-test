@@ -1,0 +1,38 @@
+# ==============================================================================
+# 使用方式：
+#   bash build.sh
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+# ==============================================================================
+
+services:
+  backend:
+    image: si-overseas-backend:latest
+    container_name: si-overseas-backend-prod
+    environment:
+      APP_ENV: production
+    env_file:
+      - .env.prod
+    restart: unless-stopped
+    networks:
+      - si-overseas-network
+
+  frontend:
+    build:
+      context: ./si-overseas
+      dockerfile: Dockerfile
+    image: si-overseas-frontend:latest
+    container_name: si-overseas-frontend-prod
+    environment:
+      PROXY_TARGET: http://backend:8000
+      PREVIEW_ALLOWED_HOSTS: ${PREVIEW_ALLOWED_HOSTS:-overseas-agent.sisensing.com}
+    ports:
+      - "${PORT:-80}:4173"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - si-overseas-network
+
+networks:
+  si-overseas-network:
+    driver: bridge
