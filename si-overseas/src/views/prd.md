@@ -13,7 +13,7 @@ The prototype supports overseas CGM after-sales detect workflows through three m
 | `/multi-detect/:batchId` | MultiDetect | Same-fault multi-device processing and results |
 | `/records` | DetectRecords | Historical detect records and filtering |
 | `/thresholds` | Thresholds | Data accuracy rule profile governance |
-| `/accounts` | AccountManagement | Dealer manager staff account management |
+| `/accounts` | AccountManagement | Dealer manager and dealer account management |
 
 `/detect` redirects to `/chat`. There is no standalone Batch Query or legacy bulk flow.
 

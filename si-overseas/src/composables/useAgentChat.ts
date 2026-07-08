@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { backendApi } from '@/api/backend';
 import { useDemoStore } from '@/composables/useDemoStore';
 import { FAULT_CATEGORY_META, faultMetaForCategory } from '@/composables/faultCategories';
@@ -31,6 +31,24 @@ const SN_PATTERN = /P\d{10}[A-Z0-9]{5}/i;
 const sessions = ref<ChatSession[]>(loadSessions());
 const currentSessionId = ref(sessions.value[0]?.id ?? createSession().id);
 const isResponding = ref(false);
+
+// Watch for user login/logout changes to clear and reload sessions
+try {
+  const store = useDemoStore();
+  watch(
+    () => store.currentUser.value,
+    () => {
+      sessions.value = loadSessions();
+      if (sessions.value.length > 0) {
+        currentSessionId.value = sessions.value[0].id;
+      } else {
+        currentSessionId.value = createSession().id;
+      }
+    }
+  );
+} catch (e) {
+  console.warn('Failed to setup currentUser watch in useAgentChat:', e);
+}
 
 function positiveIntFromEnv(value: unknown, fallback: number) {
   const parsed = Number(value);

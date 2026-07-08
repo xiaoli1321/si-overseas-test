@@ -90,6 +90,7 @@ let remoteStatsRequestId = 0;
 // === Computed values ===
 // Resolve the account and role profile from the current email address.
 const currentAccount = computed(() => currentAccountProfile.value ?? resolveAccountProfile(currentUser.value));
+const canCreateUsers = computed(() => currentAccount.value.role === 'manager');
 const canManageThresholds = computed(() => true);
 // Diagnosis records visible to the current dealer account.
 const visibleRecords = computed(() => {
@@ -320,6 +321,24 @@ async function loginRemote(email: string, password: string): Promise<boolean> {
     }
     return false;
   }
+}
+
+async function createUserRemote(
+  email: string,
+  password: string,
+  distributorName: string,
+  role?: AccountProfile['role'],
+): Promise<AccountProfile> {
+  if (!backendOnline.value) {
+    throw new Error('Backend is required to create users.');
+  }
+  const payload = {
+    email,
+    password,
+    distributorName,
+    ...(role ? { role } : {}),
+  };
+  return await backendApi.createUser(payload);
 }
 
 function selectDevice(sn: string): Device {
@@ -1644,6 +1663,7 @@ function resetDemoState() {
   remoteStatsRequestId += 1;
   remoteStatsRequest = null;
   remoteStats.value = null;
+  backendOnline.value = backendEnabled();
   document.documentElement.removeAttribute('data-theme');
   activeThresholdProfile.value = cloneThresholdProfile(defaultThresholdProfile);
   clearStoredThresholdProfile();
@@ -1668,6 +1688,7 @@ function logout() {
   try {
     window.localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
     window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+    window.localStorage.removeItem('si-agent-chat-v1');
   } catch {
     // Ignore unavailable storage during logout.
   }
@@ -1676,6 +1697,7 @@ function logout() {
 export function useDemoStore() {
   return {
     CUSTOMER_EMAIL,
+    canCreateUsers,
     canManageThresholds,
     currentAccount,
     currentAccountProfile,
@@ -1704,6 +1726,7 @@ export function useDemoStore() {
     getFaultForSn,
     ensureDefaultDetectRecords,
     loadRemoteBootstrap,
+    createUserRemote,
     loginRemote,
     logout,
     requiresDataDeviationReview,

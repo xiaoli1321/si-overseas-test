@@ -20,6 +20,7 @@ def test_openapi_should_expose_core_mvp_routes() -> None:
     expected = {
         "/api/v1/auth/login",
         "/api/v1/auth/me",
+        "/api/v1/auth/users",
         "/api/v1/analytics/events",
         "/api/v1/analytics/summary",
         "/api/v1/devices/search",

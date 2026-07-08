@@ -35,6 +35,13 @@ export interface ChatTurnResult {
   assistantMessage: ChatMessage;
 }
 
+export interface CreateUserPayload {
+  email: string;
+  password: string;
+  role?: AccountProfile['role'];
+  distributorName: string;
+}
+
 interface Envelope<T> {
   code: number;
   message: string;
@@ -105,7 +112,7 @@ async function request<T>(path: string, init: RequestInit & { timeoutMs?: number
     clearTimeout(timeoutId);
   }
 
-  if (response.status === 401) {
+  if (response.status === 401 && path !== '/api/v1/auth/login') {
     try {
       window.localStorage.removeItem(TOKEN_STORAGE_KEY);
       window.localStorage.removeItem('si-overseas-current-user');
@@ -151,6 +158,18 @@ export const backendApi = {
 
   me(): Promise<AccountProfile> {
     return request<AccountProfile>('/api/v1/auth/me');
+  },
+
+  createUser(payload: CreateUserPayload): Promise<AccountProfile> {
+    return request<AccountProfile>('/api/v1/auth/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: payload.email,
+        password: payload.password,
+        role: payload.role ?? 'dealer',
+        distributorName: payload.distributorName,
+      }),
+    });
   },
 
   getDevice(sn: string): Promise<Device> {
