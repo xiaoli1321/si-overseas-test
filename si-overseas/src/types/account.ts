@@ -1,5 +1,5 @@
 export type OrganizationType = 'Pharmacy' | 'Hospital' | 'Distributor' | 'Unassigned';
-export type AccountRole = 'manager' | 'staff';
+export type AccountRole = 'manager' | 'dealer';
 
 export interface AccountProfile {
   email: string;

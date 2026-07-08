@@ -25,6 +25,35 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class CreateUserRequest(BaseModel):
+    email: str
+    password: str = Field(min_length=8, max_length=128)
+    role: Literal["manager", "dealer"] = "dealer"
+    distributor_name: str = Field(
+        min_length=1,
+        max_length=100,
+        validation_alias=AliasChoices("distributor_name", "distributorName"),
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not normalized:
+            raise ValueError("email is required")
+        return normalized
+
+    @field_validator("distributor_name")
+    @classmethod
+    def normalize_distributor_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("distributor_name is required")
+        return normalized
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

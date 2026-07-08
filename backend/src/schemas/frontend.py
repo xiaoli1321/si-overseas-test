@@ -34,15 +34,16 @@ def threshold_to_frontend(threshold: Threshold) -> dict[str, Any]:
 
 
 def user_to_frontend(user: User) -> dict[str, Any]:
+    distributor_name = user.distributor_name or "Unassigned dealer"
     return {
         "email": user.email,
         "displayName": "Chris Test"
         if user.email == "christest@sibionics.com"
-        else user.distributor_name,
-        "role": "manager",
+        else distributor_name,
+        "role": user.role if user.role in {"manager", "dealer"} else "dealer",
         "dealerId": "chris-overseas-dealer",
-        "dealerName": user.distributor_name,
-        "organizationName": user.distributor_name,
+        "dealerName": distributor_name,
+        "organizationName": distributor_name,
         "organizationType": "Distributor",
         "region": "A Region",
     }
