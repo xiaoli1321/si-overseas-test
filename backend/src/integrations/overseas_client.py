@@ -103,12 +103,32 @@ class OverseasCGMClient:
 
     async def get_glucose_series(self, serial_no: str) -> dict[str, Any]:
         """获取血糖序列数据（已适配为规则引擎所需格式）"""
-        res = await self._get_adapted_data(serial_no)
+        term = serial_no.strip().upper()
+        if is_bluetooth_name(term):
+            validated = validate_bluetooth_name(term)
+            res_list = await self._get_adapted_data_by_device_name(validated)
+            if len(res_list) != 1:
+                raise InvalidParamsError(
+                    f"Bluetooth name '{validated}' matched {len(res_list)} devices; "
+                    "submit serialNo to identify one device."
+                )
+            return res_list[0][1]
+        res = await self._get_adapted_data(term)
         return res[1]
 
     async def get_latest_alarm(self, serial_no: str) -> dict[str, Any]:
         """获取最新告警数据（已适配为规则引擎所需格式）"""
-        res = await self._get_adapted_data(serial_no)
+        term = serial_no.strip().upper()
+        if is_bluetooth_name(term):
+            validated = validate_bluetooth_name(term)
+            res_list = await self._get_adapted_data_by_device_name(validated)
+            if len(res_list) != 1:
+                raise InvalidParamsError(
+                    f"Bluetooth name '{validated}' matched {len(res_list)} devices; "
+                    "submit serialNo to identify one device."
+                )
+            return res_list[0][2]
+        res = await self._get_adapted_data(term)
         return res[2]
 
     async def search_devices(self, keyword: str) -> list[dict[str, Any]]:

@@ -194,6 +194,41 @@ class DetectionCreateRequest(BaseModel):
         return normalized
 
 
+class OpenApiDetectionCreateRequest(BaseModel):
+    serial_no: str | None = Field(
+        default=None, validation_alias=AliasChoices("serial_no", "serialNo", "sn")
+    )
+    device_name: str | None = Field(
+        default=None, validation_alias=AliasChoices("device_name", "deviceName")
+    )
+    fault_category: FaultCategory = Field(
+        validation_alias=AliasChoices("fault_category", "faultCategory")
+    )
+    file_ids: list[str] = Field(
+        default_factory=list, validation_alias=AliasChoices("file_ids", "fileIds")
+    )
+    threshold_config: dict | None = Field(
+        default=None, validation_alias=AliasChoices("threshold_config", "thresholdConfig")
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    @model_validator(mode="after")
+    def normalize_identifier(self) -> "OpenApiDetectionCreateRequest":
+        self.serial_no = self.serial_no.strip().upper() if self.serial_no else None
+        self.device_name = self.device_name.strip().upper() if self.device_name else None
+        if not self.serial_no and not self.device_name:
+            raise ValueError("serialNo or deviceName is required")
+        if self.threshold_config is not None:
+            from src.rules.thresholds import validate_threshold_profile
+
+            try:
+                self.threshold_config = validate_threshold_profile(self.threshold_config)
+            except ValueError as exc:
+                raise ValueError(f"Invalid thresholdConfig: {exc}") from exc
+        return self
+
+
 class BatchDetectionCreateRequest(BaseModel):
     serial_nos: list[str] = Field(
         min_length=1,

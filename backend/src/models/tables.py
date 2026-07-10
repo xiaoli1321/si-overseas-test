@@ -164,6 +164,9 @@ class DetectRecord(Base):
         ForeignKey("batch_tasks.id"), index=True, nullable=True
     )
     serial_no: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    source: Mapped[str] = mapped_column(
+        String(20), default="web", nullable=False, index=True
+    )
     device_type: Mapped[str] = mapped_column(String(100), nullable=False)
     fault_category: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
     fault_subtype: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -215,6 +218,29 @@ class DetectRecord(Base):
     @feedback_status.setter
     def feedback_status(self, value: str) -> None:
         self.adoption_status = value
+
+
+class OpenApiIdempotencyKey(Base):
+    """Deduplicates partner retries before an async detection is scheduled."""
+
+    __tablename__ = "openapi_idempotency_keys"
+    __table_args__ = (
+        UniqueConstraint("user_id", "idempotency_key", name="uq_openapi_idempotency_user_key"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"), index=True, nullable=False
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    detect_record_id: Mapped[int | None] = mapped_column(
+        ForeignKey("detect_records.id"), nullable=True
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
 
 
 class ChatSession(Base):

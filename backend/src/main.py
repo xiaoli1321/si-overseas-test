@@ -14,6 +14,7 @@ from src.api import (
     detections,
     devices,
     files,
+    openapi,
     records,
     thresholds,
 )
@@ -74,6 +75,7 @@ app.include_router(batch_tasks.router, prefix="/api/v1")
 app.include_router(thresholds.router, prefix="/api/v1")
 app.include_router(records.router, prefix="/api/v1")
 app.include_router(files.router, prefix="/api/v1")
+app.include_router(openapi.router, prefix="/openapi/v1")
 
 
 @app.get("/health")

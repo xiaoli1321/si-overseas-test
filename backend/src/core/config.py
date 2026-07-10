@@ -128,6 +128,7 @@ class YamlConfigSettingsSource(PydanticBaseSettingsSource):
                 "vlm_base_url",
                 "vlm_enabled",
                 "vlm_max_retries",
+                "vlm_request_timeout_seconds",
                 "intent_model",
                 "vlm_model",
             ):
@@ -236,6 +237,7 @@ class Settings(BaseSettings):
     vlm_model: str = "qwen-vl-max"
     vlm_enabled: bool = True
     vlm_max_retries: int = 2
+    vlm_request_timeout_seconds: float = 90.0
     vlm_prompt_version: str = "application-failure-v1"
     vlm_system_prompt_glucose_path: str = (
         "prompts/scanner/vlm_system_prompt_glucose.jinja2"

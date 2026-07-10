@@ -246,6 +246,39 @@ class TestOverseasCGMClientBluetoothName:
             await client.get_device("AA250")  # Too short
 
     @pytest.mark.asyncio
+    async def test_glucose_and_alarm_by_single_bluetooth_name(self) -> None:
+        client = self._make_client()
+        glucose = {"points": [{"glucose": 5.6}]}
+        alarm = {"latest_alarm_status": 2}
+
+        with patch.object(
+            client,
+            "_get_adapted_data_by_device_name",
+            AsyncMock(return_value=[({"sn": "AA260901AB"}, glucose, alarm)]),
+        ) as by_name:
+            assert await client.get_glucose_series("AA260901AB") is glucose
+            assert await client.get_latest_alarm("AA260901AB") is alarm
+
+        assert by_name.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_glucose_by_ambiguous_bluetooth_name_requires_serial_no(self) -> None:
+        client = self._make_client()
+
+        with patch.object(
+            client,
+            "_get_adapted_data_by_device_name",
+            AsyncMock(
+                return_value=[
+                    ({"sn": "SN-1"}, {"points": []}, {}),
+                    ({"sn": "SN-2"}, {"points": []}, {}),
+                ]
+            ),
+        ):
+            with pytest.raises(InvalidParamsError, match="submit serialNo"):
+                await client.get_glucose_series("AA250862SE")
+
+    @pytest.mark.asyncio
     async def test_search_device_terms_mixed(self) -> None:
         client = self._make_client()
 

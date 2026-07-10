@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.utils import string_to_bigint
@@ -54,3 +54,27 @@ async def list_uploaded_files(
     )
     result = await db.execute(query)
     return result.scalars().all()
+
+
+async def bind_uploaded_files_to_record(
+    db: AsyncSession,
+    *,
+    user_id: int,
+    file_ids: list[str],
+    detect_record_id: int,
+) -> None:
+    """Bind partner-uploaded evidence once; a file cannot back multiple API tasks."""
+    if not file_ids:
+        return
+    mapped_ids = [string_to_bigint(file_id) for file_id in file_ids]
+    result = await db.execute(
+        update(UploadedFile)
+        .where(
+            UploadedFile.user_id == user_id,
+            UploadedFile.id.in_(mapped_ids),
+            UploadedFile.detect_record_id.is_(None),
+        )
+        .values(detect_record_id=detect_record_id)
+    )
+    if result.rowcount != len(set(mapped_ids)):
+        raise ValueError("One or more files are already bound to another detection.")

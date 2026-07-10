@@ -43,6 +43,7 @@ vlm:
   vlm_base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
   vlm_enabled: true
   vlm_max_retries: 2
+  vlm_request_timeout_seconds: 90.0
   intent_model: "qwen-plus"
   vlm_model: "qwen-vl-max"
   prompt_version: "application-failure-v1"

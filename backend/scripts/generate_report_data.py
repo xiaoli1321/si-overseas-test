@@ -268,6 +268,88 @@ GROUP BY u.distributor_name, a.metadata->>'entry_source', a.metadata->>'fault_ca
 ORDER BY distributor_name, query_count DESC;
 """
 
+# Web and OpenAPI use the same detect_records table. `source` is therefore the
+# authoritative channel for result metrics. Login events use channel metadata;
+# old events without it are treated as Web for backwards-compatible reports.
+CHANNEL_COMPARISON_SQL = """
+WITH detection_stats AS (
+    SELECT
+        r.user_id,
+        COALESCE(NULLIF(r.source, ''), 'web') AS channel,
+        COUNT(*) AS submitted_count,
+        COUNT(*) FILTER (WHERE r.status = 'completed') AS completed_count,
+        COUNT(*) FILTER (
+            WHERE r.status = 'completed' AND r.verdict = 'Replacement Eligible'
+        ) AS eligible_count,
+        COUNT(*) FILTER (
+            WHERE r.status = 'completed' AND r.adoption_status = 'adopted'
+        ) AS adopted_count,
+        COUNT(*) FILTER (
+            WHERE r.status = 'completed' AND r.adoption_status = 'rejected'
+        ) AS rejected_count
+    FROM detect_records r
+    GROUP BY r.user_id, COALESCE(NULLIF(r.source, ''), 'web')
+),
+login_stats AS (
+    SELECT
+        a.user_id,
+        COALESCE(a.metadata->>'channel', 'web') AS channel,
+        COUNT(*) AS login_count
+    FROM audit_logs a
+    WHERE a.action = 'auth.login' AND a.status = 'success'
+    GROUP BY a.user_id, COALESCE(a.metadata->>'channel', 'web')
+),
+channel_users AS (
+    SELECT user_id, channel FROM detection_stats
+    UNION
+    SELECT user_id, channel FROM login_stats
+)
+SELECT
+    COALESCE(u.distributor_name, 'N/A') AS distributor_name,
+    cu.channel,
+    COALESCE(SUM(l.login_count), 0) AS login_count,
+    COALESCE(SUM(d.submitted_count), 0) AS submitted_count,
+    COALESCE(SUM(d.completed_count), 0) AS completed_count,
+    COALESCE(SUM(d.eligible_count), 0) AS eligible_count,
+    COALESCE(SUM(d.adopted_count), 0) AS adopted_count,
+    COALESCE(SUM(d.rejected_count), 0) AS rejected_count,
+    ROUND(
+        COALESCE(SUM(d.eligible_count), 0)::decimal /
+        NULLIF(COALESCE(SUM(d.completed_count), 0), 0) * 100,
+        2
+    ) AS eligibility_rate,
+    ROUND(
+        COALESCE(SUM(d.adopted_count), 0)::decimal /
+        NULLIF(COALESCE(SUM(d.adopted_count), 0) + COALESCE(SUM(d.rejected_count), 0), 0) * 100,
+        2
+    ) AS adoption_rate
+FROM channel_users cu
+JOIN users u ON u.id = cu.user_id
+LEFT JOIN detection_stats d ON d.user_id = cu.user_id AND d.channel = cu.channel
+LEFT JOIN login_stats l ON l.user_id = cu.user_id AND l.channel = cu.channel
+GROUP BY u.distributor_name, cu.channel
+ORDER BY distributor_name, cu.channel;
+"""
+
+OPENAPI_OPERATION_QUALITY_SQL = """
+SELECT
+    COALESCE(u.distributor_name, 'N/A') AS distributor_name,
+    a.action,
+    COUNT(*) AS call_count,
+    COUNT(*) FILTER (WHERE a.status = 'success') AS success_count,
+    COUNT(*) FILTER (WHERE a.status <> 'success') AS failure_count,
+    ROUND(
+        COUNT(*) FILTER (WHERE a.status = 'success')::decimal /
+        NULLIF(COUNT(*), 0) * 100,
+        2
+    ) AS success_rate
+FROM audit_logs a
+LEFT JOIN users u ON u.id = a.user_id
+WHERE a.action LIKE 'openapi.%'
+GROUP BY u.distributor_name, a.action
+ORDER BY distributor_name, a.action;
+"""
+
 # ==============================================================================
 # 3. New Granular Threshold Modifications SQL
 # ==============================================================================
@@ -377,6 +459,10 @@ async def main():
         print("Running threshold modification queries...")
         rows_threshold_rank = await run_query(db, THRESHOLD_RANK_SQL)
         rows_threshold_dist = await run_query(db, THRESHOLD_DISTRIBUTOR_SQL)
+
+        print("Running Web/OpenAPI channel queries...")
+        rows_channel_comparison = await run_query(db, CHANNEL_COMPARISON_SQL)
+        rows_openapi_quality = await run_query(db, OPENAPI_OPERATION_QUALITY_SQL)
         
         # Format subtype adoption table
         md_subtype_adopt = []
@@ -433,6 +519,24 @@ async def main():
             translated = translate_field(r[1])
             md_threshold_dist.append(f"| {r[0]} | {translated} | **{r[2]}** |")
         md_threshold_dist_table = "\n".join(md_threshold_dist)
+
+        CHANNEL_CN = {"web": "Web", "openapi": "OpenAPI"}
+        md_channel_comparison = []
+        for r in rows_channel_comparison:
+            eligibility_rate = f"{r[8]:.2f}%" if r[8] is not None else "-"
+            adoption_rate = f"{r[9]:.2f}%" if r[9] is not None else "-"
+            md_channel_comparison.append(
+                f"| {r[0]} | {CHANNEL_CN.get(r[1], r[1])} | {r[2]} | {r[3]} | {r[4]} | {r[5]} | {eligibility_rate} | {r[6]} | {r[7]} | {adoption_rate} |"
+            )
+        md_channel_comparison_table = "\n".join(md_channel_comparison)
+
+        md_openapi_quality = []
+        for r in rows_openapi_quality:
+            success_rate = f"{r[5]:.2f}%" if r[5] is not None else "-"
+            md_openapi_quality.append(
+                f"| {r[0]} | `{r[1]}` | {r[2]} | {r[3]} | {r[4]} | {success_rate} |"
+            )
+        md_openapi_quality_table = "\n".join(md_openapi_quality)
 
         # (Removed threshold user table format per user request)
 
@@ -506,6 +610,24 @@ async def main():
 | 经销商名称 | 阈值判定字段 | 修改次数 |
 | :--- | :--- | :---: |
 {md_threshold_dist_table}
+
+---
+
+## 7. Web 与 OpenAPI 渠道对比
+以 `detect_records.source` 作为检测业务渠道的唯一口径；登录仅统计一次通用 `auth.login` 事件，避免与 `openapi.auth.login` 审计记录重复计数。
+
+| 经销商名称 | 渠道 | 登录次数 | 检测提交数 | 已完成检测 | 符合售后数 | 符合率 (%) | 已采纳 | 已拒绝 | 采纳率 (%) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+{md_channel_comparison_table}
+
+---
+
+## 8. OpenAPI 运行质量
+仅统计 `openapi.*` 审计事件，用于观察接口调用、轮询和失败率；不与 Web 设备查询次数混合。
+
+| 经销商名称 | API 操作 | 调用次数 | 成功次数 | 失败次数 | 成功率 (%) |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+{md_openapi_quality_table}
 """
         await _upload_report("report_tables.md", clean_report)
         print("Uploaded report_tables.md with granular tables successfully!")
@@ -595,6 +717,29 @@ async def main():
         for r in rows_threshold_dist:
             translated = translate_field(r[1])
             csv_lines.append(f"{r[0]},{translated},{r[2]}")
+        csv_sections.append("\n".join(csv_lines))
+
+        # 9. Channel Comparison Table
+        csv_lines = [
+            "7. Web 与 OpenAPI 渠道对比",
+            "经销商名称,渠道,登录次数,检测提交数,已完成检测,符合售后数,符合率 (%),已采纳,已拒绝,采纳率 (%)",
+        ]
+        for r in rows_channel_comparison:
+            eligibility_rate = f"{r[8]:.2f}%" if r[8] is not None else "-"
+            adoption_rate = f"{r[9]:.2f}%" if r[9] is not None else "-"
+            csv_lines.append(
+                f"{r[0]},{CHANNEL_CN.get(r[1], r[1])},{r[2]},{r[3]},{r[4]},{r[5]},{eligibility_rate},{r[6]},{r[7]},{adoption_rate}"
+            )
+        csv_sections.append("\n".join(csv_lines))
+
+        # 10. OpenAPI Operation Quality Table
+        csv_lines = [
+            "8. OpenAPI 运行质量",
+            "经销商名称,API 操作,调用次数,成功次数,失败次数,成功率 (%)",
+        ]
+        for r in rows_openapi_quality:
+            success_rate = f"{r[5]:.2f}%" if r[5] is not None else "-"
+            csv_lines.append(f"{r[0]},{r[1]},{r[2]},{r[3]},{r[4]},{success_rate}")
         csv_sections.append("\n".join(csv_lines))
 
         # (Removed threshold user CSV section per user request)

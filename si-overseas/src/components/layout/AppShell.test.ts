@@ -59,7 +59,7 @@ describe('AppShell', () => {
     expect(wrapper.find('[data-test="brand-logo"]').exists()).toBe(false);
     expect(wrapper.find('.logo-img').exists()).toBe(true);
     expect(wrapper.find('.logo-img').attributes('alt')).toBe('SIBIONICS');
-    expect(wrapper.find('.topbar-tagline').text()).toBe('CGM AI Service Desk');
+    expect(wrapper.find('.topbar-tagline').text()).toBe('CGM AI SERVICE DESK');
     const navLinks = wrapper.findAll('.nav a');
     expect(navLinks.map(link => link.text())).toEqual(['Device Detection', 'Thresholds', 'Detection History']);
     expect(navLinks.every(link => link.classes().includes('top-nav-pill'))).toBe(true);

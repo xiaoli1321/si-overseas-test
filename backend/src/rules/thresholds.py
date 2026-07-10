@@ -1,4 +1,5 @@
 from copy import deepcopy
+import math
 from typing import Any
 
 DATA_DEVIATION_REQUIRED_PAIR_COUNT = 2
@@ -51,6 +52,28 @@ def default_thresholds() -> dict[str, Any]:
     return normalize_threshold_profile(DEFAULT_THRESHOLD_PROFILE)
 
 
+def openapi_threshold_template() -> dict[str, Any]:
+    """Return the copy-and-edit threshold template exposed to OpenAPI clients."""
+    profile = default_thresholds()
+    profile.pop("version", None)
+    profile.pop("savedAt", None)
+
+    rules = profile.get("rules", {})
+    deviation = rules.get("inaccuracy", {}).get("deviation")
+    if isinstance(deviation, dict):
+        for field in (
+            "within48hPairCount",
+            "within48hQualifiedPairCount",
+            "after48hPairCount",
+            "after48hQualifiedPairCount",
+        ):
+            deviation.pop(field, None)
+    application = rules.get("applicationFailure")
+    if isinstance(application, dict):
+        application.pop("photoCount", None)
+    return profile
+
+
 def normalize_threshold_profile(profile_or_config: dict[str, Any]) -> dict[str, Any]:
     config = deepcopy(profile_or_config)
     rules = config.get("rules")
@@ -61,29 +84,38 @@ def normalize_threshold_profile(profile_or_config: dict[str, Any]) -> dict[str, 
     if isinstance(inaccuracy, dict):
         deviation = inaccuracy.get("deviation")
         if isinstance(deviation, dict):
-            deviation.setdefault(
-                "within48hPairCount", DATA_DEVIATION_REQUIRED_PAIR_COUNT
-            )
-            deviation.setdefault(
-                "within48hQualifiedPairCount", DATA_DEVIATION_REQUIRED_PAIR_COUNT
-            )
-            deviation.setdefault(
-                "after48hPairCount", DATA_DEVIATION_REQUIRED_PAIR_COUNT
-            )
-            deviation.setdefault(
-                "after48hQualifiedPairCount", DATA_DEVIATION_REQUIRED_PAIR_COUNT
-            )
+            # Evidence collection counts are a product rule, not configurable
+            # thresholds.  Normalizing old stored profiles here prevents a
+            # historical value from changing today's four-image requirement.
+            deviation["within48hPairCount"] = DATA_DEVIATION_REQUIRED_PAIR_COUNT
+            deviation["within48hQualifiedPairCount"] = DATA_DEVIATION_REQUIRED_PAIR_COUNT
+            deviation["after48hPairCount"] = DATA_DEVIATION_REQUIRED_PAIR_COUNT
+            deviation["after48hQualifiedPairCount"] = DATA_DEVIATION_REQUIRED_PAIR_COUNT
 
     application = rules.get("applicationFailure")
     if isinstance(application, dict):
-        application.setdefault("photoCount", APPLICATION_FAILURE_REQUIRED_PHOTO_COUNT)
+        application["photoCount"] = APPLICATION_FAILURE_REQUIRED_PHOTO_COUNT
 
     return config
 
 
 def to_rule_config(profile_or_config: dict[str, Any]) -> dict[str, Any]:
     if "data_accuracy" in profile_or_config:
-        return deepcopy(profile_or_config)
+        # Some callers (and older records) already hold the internal rule
+        # shape. Keep that compatibility path, while still enforcing the same
+        # system-managed evidence requirement at execution time.
+        config = deepcopy(profile_or_config)
+        deviation = config.get("data_accuracy", {}).get("data_deviation")
+        if isinstance(deviation, dict):
+            deviation["min_pairs"] = DATA_DEVIATION_REQUIRED_PAIR_COUNT
+            deviation["within48hPairCount"] = DATA_DEVIATION_REQUIRED_PAIR_COUNT
+            deviation["within48hQualifiedPairCount"] = DATA_DEVIATION_REQUIRED_PAIR_COUNT
+            deviation["after48hPairCount"] = DATA_DEVIATION_REQUIRED_PAIR_COUNT
+            deviation["after48hQualifiedPairCount"] = DATA_DEVIATION_REQUIRED_PAIR_COUNT
+        application = config.get("application_failure")
+        if isinstance(application, dict):
+            application["min_images"] = APPLICATION_FAILURE_REQUIRED_PHOTO_COUNT
+        return config
 
     normalized = normalize_threshold_profile(profile_or_config)
     rules = normalized.get("rules", normalized)
@@ -156,6 +188,59 @@ def to_rule_config(profile_or_config: dict[str, Any]) -> dict[str, Any]:
             "after_sales_score": application.get("afterSalesScore", 8),
         },
     }
+
+
+def validate_threshold_profile(profile_or_config: dict[str, Any]) -> dict[str, Any]:
+    """Validate an externally supplied profile before it becomes an async task."""
+    if not isinstance(profile_or_config, dict):
+        raise ValueError("thresholdConfig must be an object")
+
+    # Open API callers may omit these fields.  Supplying a different value is
+    # rejected instead of silently accepting a setting that can never apply.
+    rules = profile_or_config.get("rules")
+    if isinstance(rules, dict):
+        deviation = rules.get("inaccuracy", {}).get("deviation", {})
+        fixed_deviation_fields = (
+            "within48hPairCount",
+            "within48hQualifiedPairCount",
+            "after48hPairCount",
+            "after48hQualifiedPairCount",
+        )
+        if isinstance(deviation, dict):
+            for field in fixed_deviation_fields:
+                if field in deviation and deviation[field] != DATA_DEVIATION_REQUIRED_PAIR_COUNT:
+                    raise ValueError(f"inaccuracy.deviation.{field} is system-managed and fixed at 2")
+        application = rules.get("applicationFailure", {})
+        if (
+            isinstance(application, dict)
+            and "photoCount" in application
+            and application["photoCount"] != APPLICATION_FAILURE_REQUIRED_PHOTO_COUNT
+        ):
+            raise ValueError("applicationFailure.photoCount is system-managed and fixed at 2")
+
+    normalized = normalize_threshold_profile(profile_or_config)
+    try:
+        rule_config = to_rule_config(normalized)
+    except (KeyError, TypeError) as exc:
+        raise ValueError("thresholdConfig is missing required rule fields") from exc
+
+    def require_finite_numbers(value: Any) -> None:
+        if isinstance(value, dict):
+            for nested in value.values():
+                require_finite_numbers(nested)
+            return
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError("thresholdConfig rule values must be numbers")
+        if not math.isfinite(float(value)):
+            raise ValueError("thresholdConfig rule values must be finite")
+
+    require_finite_numbers(rule_config)
+    application = rule_config["application_failure"]
+    if application["min_images"] < 0:
+        raise ValueError("applicationFailure.photoCount cannot be negative")
+    if not 0 <= application["min_score"] <= application["after_sales_score"] <= 10:
+        raise ValueError("applicationFailure scores must be between 0 and 10")
+    return normalized
 
 
 def frontend_threshold_profile(

@@ -34,6 +34,8 @@ async def save_threshold(
     restored_from: int | None = None,
 ) -> Threshold:
     version = await get_next_threshold_version(db, user_id)
+    # The normalization intentionally overwrites system-managed evidence
+    # counts, including values carried by older saved profiles.
     config = normalize_threshold_profile(config)
     if "rules" in config:
         config = {

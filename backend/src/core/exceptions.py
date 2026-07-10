@@ -14,9 +14,10 @@ class AppBaseException(Exception):
     status_code = 500
     code = 50001
 
-    def __init__(self, message: str | None = None) -> None:
+    def __init__(self, message: str | None = None, data: object | None = None) -> None:
         if message is not None:
             self.message = message
+        self.data = data
 
 
 class InvalidParamsError(AppBaseException):
@@ -49,6 +50,12 @@ class BusinessValidationError(AppBaseException):
     message = "Business validation failed."
 
 
+class ConflictError(AppBaseException):
+    status_code = 409
+    code = 40901
+    message = "Conflict."
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppBaseException)
     async def app_exception_handler(
@@ -67,7 +74,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
         return JSONResponse(
             status_code=exc.status_code,
-            content={"code": exc.code, "message": exc.message, "data": None},
+            content={"code": exc.code, "message": exc.message, "data": exc.data},
         )
 
     @app.exception_handler(RequestValidationError)

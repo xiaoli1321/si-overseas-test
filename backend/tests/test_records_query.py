@@ -31,6 +31,13 @@ class TestBuildRecordsQuery:
         assert "detect_records.user_id = 42" in sql
         assert "is_visible_in_workbench" in sql
 
+    def test_source_filter(self) -> None:
+        query = _build_records_query(42, source="web")
+        sql = _sql_text(query)
+
+        assert "source" in sql
+        assert "web" in sql
+
     def test_fault_category_filter(self) -> None:
         query = _build_records_query(42, fault_category="Sensor falling off")
         sql = _sql_text(query)

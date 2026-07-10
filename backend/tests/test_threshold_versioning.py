@@ -39,17 +39,13 @@ async def test_threshold_versioning_and_rollback() -> None:
                     "jump": {"deltaMmol": 3.0, "consecutive": 3},
                     "deviation": {
                         "within48hDeviationMmol": 7.0,
-                        "within48hPairCount": 5,
-                        "within48hQualifiedPairCount": 4,
                         "after48hDeviationRangePct": 20,
-                        "after48hPairCount": 6,
-                        "after48hQualifiedPairCount": 3,
                         "after48hWearDays": 2,
                     },
                 },
                 "deviceAbnormal": {"wearDays": 0, "temporaryAbnormalHours": 3},
                 "detachment": {"detachedStatusValue": 1, "wearDays": 14},
-                "applicationFailure": {"photoCount": 9, "afterSalesScore": 8, "manualReviewScore": 5},
+                "applicationFailure": {"afterSalesScore": 8, "manualReviewScore": 5},
             }
         }
         
@@ -80,17 +76,13 @@ async def test_threshold_versioning_and_rollback() -> None:
                     "jump": {"deltaMmol": 3.0, "consecutive": 3},
                     "deviation": {
                         "within48hDeviationMmol": 7.0,
-                        "within48hPairCount": 2,
-                        "within48hQualifiedPairCount": 2,
                         "after48hDeviationRangePct": 20,
-                        "after48hPairCount": 2,
-                        "after48hQualifiedPairCount": 2,
                         "after48hWearDays": 2,
                     },
                 },
                 "deviceAbnormal": {"wearDays": 0, "temporaryAbnormalHours": 3},
                 "detachment": {"detachedStatusValue": 1, "wearDays": 14},
-                "applicationFailure": {"photoCount": 2, "afterSalesScore": 8, "manualReviewScore": 5},
+                "applicationFailure": {"afterSalesScore": 8, "manualReviewScore": 5},
             }
         }
         

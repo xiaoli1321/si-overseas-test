@@ -25,9 +25,13 @@ from src.integrations import get_cgm_client
 from src.integrations.overseas_adapter import STATUS_MAP
 from src.integrations.vlm import QwenVlClient
 from src.models.tables import BatchTask, DetectRecord, UploadedFile, User
-from src.repositories.files import list_uploaded_files
+from src.repositories.files import bind_uploaded_files_to_record, list_uploaded_files
 from src.repositories.store import get_batch_records, get_batch_task, get_record
 from src.rules.engine import run_rules
+from src.rules.thresholds import (
+    APPLICATION_FAILURE_REQUIRED_PHOTO_COUNT,
+    normalize_threshold_profile,
+)
 from src.services.analytics import track_diagnosis_completed
 from src.services.implantation_scanner import scan_implantation_photos
 from src.services.storage import get_vlm_reference, new_file_id, save_bytes_to_storage
@@ -304,21 +308,43 @@ async def create_detection(
     file_ids: list[str],
     batch_task_id: int | None = None,
     run_immediately: bool = True,
+    threshold_config: dict | None = None,
+    source: str = "web",
 ) -> DetectRecord:
     files = await validate_file_ownership(db, user_id, file_ids)
+    if threshold_config is None:
+        threshold = await current_threshold(db, user_id)
+        snapshot = jsonable_encoder(normalize_threshold_profile(threshold.config))
+        threshold_id = threshold.id
+    else:
+        snapshot = jsonable_encoder(normalize_threshold_profile(threshold_config))
+        threshold_id = None
     record = DetectRecord(
         user_id=user_id,
         batch_task_id=batch_task_id,
         serial_no=serial_no,
+        source=source,
         device_type=get_settings().default_device_type,
         fault_category=fault_category,
         status="processing",
         created_by=user_id,
         started_at=datetime.now(UTC),
+        threshold_id=threshold_id,
+        threshold_snapshot=snapshot,
     )
     db.add(record)
     await db.flush()
     await db.refresh(record)
+    if source == "openapi":
+        try:
+            await bind_uploaded_files_to_record(
+                db,
+                user_id=user_id,
+                file_ids=file_ids,
+                detect_record_id=record.id,
+            )
+        except ValueError as exc:
+            raise BusinessValidationError(str(exc)) from exc
     if run_immediately:
         await execute_detection(db, record, file_ids=file_ids, preloaded_files=files)
     return record
@@ -362,8 +388,16 @@ async def execute_detection(
             uploaded_files = await _load_uploaded_files(db, record.user_id, file_ids)
         vlm_image_refs = await _vlm_refs_from_uploaded_files(file_ids, uploaded_files)
 
-        # Step 2: 获取当前登录用户生效的指标判定阈值配置 (Threshold)
-        threshold = await current_threshold(db, record.user_id)
+        # Step 2: use the snapshot taken at task creation. This keeps async
+        # execution reproducible when a user changes thresholds meanwhile.
+        if record.threshold_snapshot is None:
+            threshold = await current_threshold(db, record.user_id)
+            threshold_config = threshold.config
+            record.threshold_id = threshold.id
+            record.threshold_snapshot = jsonable_encoder(threshold.config)
+        else:
+            threshold_config = normalize_threshold_profile(record.threshold_snapshot)
+            record.threshold_snapshot = jsonable_encoder(threshold_config)
 
         # Step 3: 获取设备数据 (设备状态、血糖序列、告警信息)
         # 植入失败 (Application failure) 场景：设备尚未激活，海外 API 查询不到（返回为空），
@@ -376,7 +410,9 @@ async def execute_detection(
 
         # Step 4: 根据故障品类，按需运行 VLM 大模型多模态图片识别
         vision_analysis = None
-        if record.fault_category == "Application failure":
+        implantation_scan_data = []
+        min_images = APPLICATION_FAILURE_REQUIRED_PHOTO_COUNT
+        if record.fault_category == "Application failure" and len(file_ids) >= min_images:
             # 软件/应用故障：识别图片中是否有探头、针头是否外露、不干胶是否脱落等
             vision_raw = await vlm_client.analyze_sensor_photos(vlm_image_refs)
             vision_analysis = vision_raw.model_dump()
@@ -431,7 +467,7 @@ async def execute_detection(
             device=device,
             glucose_series=glucose,
             alarm=alarm,
-            threshold_config=threshold.config,
+            threshold_config=threshold_config,
             file_ids=file_ids,
             vision_analysis=vision_analysis,
         )
@@ -445,9 +481,6 @@ async def execute_detection(
         )
         record.fault_subtype = result.fault_subtype
         record.reasons = "\n".join(result.reasons)
-        record.threshold_id = threshold.id
-        # 对当前的阈值配置进行快照备份，便于历史回溯与审计
-        record.threshold_snapshot = jsonable_encoder(threshold.config)
 
         # 封装文件元数据
         files_meta = [
@@ -573,7 +606,8 @@ async def execute_detection(
             ),
         )
         record.status = "failed"
-        record.error_message = str(exc)
+        detail = str(exc).strip() or "no details returned by the upstream service"
+        record.error_message = f"{type(exc).__name__}: {detail}"
         record.completed_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(record)
@@ -785,7 +819,7 @@ async def process_detection_record(record_id: int, file_ids: list[str]) -> None:
 async def retry_record(
     db: AsyncSession, *, user_id: int, record_id: int
 ) -> DetectRecord:
-    record = await get_record(db, user_id, record_id)
+    record = await get_record(db, user_id, record_id, source="web")
     if record is None:
         raise NotFoundError("Detect record was not found.")
     record.status = "processing"
@@ -803,7 +837,7 @@ async def update_feedback(
     feedback_status: str,
     reject_reason: str | None,
 ) -> DetectRecord:
-    record = await get_record(db, user_id, record_id)
+    record = await get_record(db, user_id, record_id, source="web")
     if record is None:
         raise NotFoundError("Detect record was not found.")
     record.adoption_status = feedback_status
@@ -820,7 +854,7 @@ async def delete_record(
     user_id: int,
     record_id: int,
 ) -> DetectRecord:
-    record = await get_record(db, user_id, record_id)
+    record = await get_record(db, user_id, record_id, source="web")
     if record is None:
         raise NotFoundError("Detect record was not found.")
     record.is_visible_in_workbench = False
@@ -842,6 +876,7 @@ async def batch_delete_records(
         DetectRecord.id.in_(record_ids),
         DetectRecord.user_id == user_id,
         DetectRecord.is_visible_in_workbench.is_(True),
+        DetectRecord.source == "web",
     )
     result = await db.execute(query)
     target_ids = list(result.scalars().all())

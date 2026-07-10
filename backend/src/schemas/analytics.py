@@ -26,6 +26,9 @@ class EventContextSchema(BaseModel):
     role: str = Field(description="User role")
     distributor_id: int | None = Field(default=None, description="Distributor ID")
     distributor_name: str | None = Field(default=None, description="Distributor Name")
+    channel: Literal["web", "openapi"] = Field(
+        default="web", description="Business channel that initiated the event"
+    )
 
 
 class LoginEventProperties(EventContextSchema):

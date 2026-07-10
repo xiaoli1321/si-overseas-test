@@ -76,6 +76,7 @@ def _build_records_query(
     user_id: int,
     *,
     select_target: Select | None = None,
+    source: str | None = None,
     fault_category: str | None = None,
     verdict: str | None = None,
     serial_no: str | None = None,
@@ -89,6 +90,8 @@ def _build_records_query(
     query = apply_user_scope(select_target, DetectRecord, user_id).where(
         DetectRecord.is_visible_in_workbench.is_(True),
     )
+    if source:
+        query = query.where(DetectRecord.source == source)
     if fault_category:
         query = query.where(DetectRecord.fault_category == fault_category)
     if verdict:
@@ -116,6 +119,7 @@ async def list_records(
     db: AsyncSession,
     user_id: int,
     *,
+    source: str | None = None,
     fault_category: str | None = None,
     verdict: str | None = None,
     serial_no: str | None = None,
@@ -133,6 +137,7 @@ async def list_records(
     query = _build_records_query(
         user_id,
         select_target=select(DetectRecord, func.count().over().label("total")),
+        source=source,
         fault_category=fault_category,
         verdict=verdict,
         serial_no=serial_no,
@@ -157,6 +162,7 @@ async def iter_records_for_export(
     db: AsyncSession,
     user_id: int,
     *,
+    source: str | None = None,
     fault_category: str | None = None,
     verdict: str | None = None,
     serial_no: str | None = None,
@@ -173,6 +179,7 @@ async def iter_records_for_export(
         query = _build_records_query(
             user_id,
             select_target=select(DetectRecord),
+            source=source,
             fault_category=fault_category,
             verdict=verdict,
             serial_no=serial_no,
@@ -210,11 +217,13 @@ async def iter_records_for_export(
 
 
 async def get_record(
-    db: AsyncSession, user_id: int, record_id: int
+    db: AsyncSession, user_id: int, record_id: int, *, source: str | None = None
 ) -> DetectRecord | None:
     query = apply_user_scope(select(DetectRecord), DetectRecord, user_id).where(
         DetectRecord.id == record_id, DetectRecord.is_visible_in_workbench.is_(True)
     )
+    if source:
+        query = query.where(DetectRecord.source == source)
     result = await db.execute(query)
     return result.scalar_one_or_none()
 
@@ -238,7 +247,9 @@ async def get_batch_records(
     return result.scalars().all()
 
 
-async def stats(db: AsyncSession, user_id: int) -> dict[str, int]:
+async def stats(
+    db: AsyncSession, user_id: int, *, source: str | None = None
+) -> dict[str, int]:
     stmt = select(
         func.count(DetectRecord.id).label("total"),
         func.sum(
@@ -263,6 +274,8 @@ async def stats(db: AsyncSession, user_id: int) -> dict[str, int]:
         DetectRecord.user_id == user_id,
         DetectRecord.is_visible_in_workbench.is_(True),
     )
+    if source:
+        stmt = stmt.where(DetectRecord.source == source)
     result = await db.execute(stmt)
     row = result.fetchone()
     if not row:
