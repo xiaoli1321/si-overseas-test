@@ -55,9 +55,9 @@ describe('AppShell', () => {
 
     expect(wrapper.find('[data-test="brand-logo"]').exists()).toBe(false);
     expect(wrapper.find('.logo-mark').text()).toBe('SI');
-    expect(wrapper.find('.topbar-tagline').text()).toBe('CGM AI servdesk');
+    expect(wrapper.find('.topbar-tagline').text()).toBe('CGM AI Service Desk');
     const navLinks = wrapper.findAll('.nav a');
-    expect(navLinks.map(link => link.text())).toEqual(['Device detect', 'Thresholds', 'Detect records']);
+    expect(navLinks.map(link => link.text())).toEqual(['Device detection', 'Thresholds', 'Detection records']);
     expect(navLinks.every(link => link.classes().includes('top-nav-pill'))).toBe(true);
     expect(wrapper.find('.nav').classes()).toContain('theme-adaptive-nav');
     expect(navLinks[0].classes()).toContain('active');
@@ -81,7 +81,7 @@ describe('AppShell', () => {
     expect(wrapper.find('[data-test="account-menu"]').classes()).toContain('theme-surface');
   });
 
-  it('shows processing sessions before detect records are submitted', async () => {
+  it('shows processing sessions before detection records are submitted', async () => {
     const wrapper = await mountShell();
     const store = useDemoStore();
 

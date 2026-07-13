@@ -36,7 +36,7 @@ describe('DetectRecordsView', () => {
     useDemoStore().resetDemoState();
   });
 
-  it('renders detect records with the reference table badges and no Rules column', async () => {
+  it('renders detection records with the reference table badges and no Rules column', async () => {
     const store = useDemoStore();
     store.runDetect('P2251212806JND44', 'Sensor falling off');
 
@@ -50,7 +50,7 @@ describe('DetectRecordsView', () => {
       'Subtype',
       'Conclusion',
       'After-sales',
-      'Adopted',
+      'Accepted',
       'Reject reason',
       'Timestamp',
     ]);
@@ -87,14 +87,14 @@ describe('DetectRecordsView', () => {
     const { wrapper } = await mountRecords();
     const headers = wrapper.findAll('thead th').map(th => th.text());
 
-    expect(headers).toContain('Adopted');
+    expect(headers).toContain('Accepted');
     expect(headers).toContain('Reject reason');
     expect(wrapper.find('tbody').text()).toContain('Yes');
     expect(wrapper.find('tbody').text()).toContain('No');
     expect(wrapper.find('tbody').text()).toContain('Photos are blurry');
   });
 
-  it('exports detect records without initiator or organization columns', async () => {
+  it('exports detection records without initiator or organization columns', async () => {
     const store = useDemoStore();
     store.runDetect('P2251212806JND44', 'Sensor falling off');
     const createObjectURL = vi.fn((blob: Blob) => {
@@ -111,7 +111,7 @@ describe('DetectRecordsView', () => {
     const blob = createObjectURL.mock.calls[0][0] as Blob;
     const csv = await blob.text();
 
-    expect(csv.split('\n')[0]).toBe('Device SN,Type,Scenario,Subtype,Conclusion,After-sales,Adopted,Reject Reason,Timestamp,Reason');
+    expect(csv.split('\n')[0]).toBe('Device SN,Type,Scenario,Subtype,Conclusion,After-sales,Accepted,Reject Reason,Timestamp,Reason');
     expect(csv).not.toContain(store.records.value[0].id);
     expect(csv).not.toContain('Initiator Email');
     expect(csv).not.toContain('Organization');

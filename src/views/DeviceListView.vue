@@ -73,7 +73,7 @@ function openDevice(sn: string) {
           <h1>Matched devices</h1>
           <p id="devices-email-label">{{ resultsLabel }}</p>
         </div>
-        <button class="btn btn-secondary" type="button" @click="router.push({ name: 'chat' })">&#8592; Back to Device detect</button>
+        <button class="btn btn-secondary" type="button" @click="router.push({ name: 'chat' })">&#8592; Back to Device detection</button>
       </div>
       <div v-if="!store.searchResults.value.length" class="empty-state">Search first to reveal devices.</div>
       <div v-else class="device-grid">

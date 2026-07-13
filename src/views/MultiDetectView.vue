@@ -40,7 +40,7 @@ const rows = computed<Row[]>(() => sessions.value.map(session => ({
   record: session.recordId ? store.records.value.find(record => record.id === session.recordId) : undefined,
 })));
 const completedCount = computed(() => rows.value.filter(row => row.session.status === 'complete').length);
-const eligibleCount = computed(() => rows.value.filter(row => row.record?.afterSales === 'Replacement Eligible').length);
+const eligibleCount = computed(() => rows.value.filter(row => row.record?.afterSales === 'Warranty Eligible').length);
 const notEligibleCount = computed(() => rows.value.filter(row => row.record?.afterSales === 'Not Eligible').length);
 const summaryCopy = computed(() => `${completedCount.value}/${rows.value.length} complete`);
 
@@ -135,7 +135,7 @@ onBeforeUnmount(clearTimers);
           <div>
             <p class="multi-kicker">Same fault multi-device run</p>
             <h1>{{ selectedCategory }}</h1>
-            <p>All selected devices are being checked against the same fault type. Device-level rows show mapping, telemetry context, service-card status, processing progress, and final verdict.</p>
+            <p>All selected devices are being checked against the same fault type. Device-level rows show mapping, sensor context, service-card status, processing progress, and final verdict.</p>
           </div>
           <div class="multi-summary" data-test="multi-summary">
             <article>
@@ -219,7 +219,7 @@ onBeforeUnmount(clearTimers);
 
       <div class="multi-actions">
         <button class="btn btn-secondary" type="button" @click="backToQuery">Add more devices</button>
-        <button class="btn btn-primary" type="button" :disabled="completedCount === 0" @click="openRecords">Open detect records</button>
+        <button class="btn btn-primary" type="button" :disabled="completedCount === 0" @click="openRecords">Open detection records</button>
       </div>
     </div>
   </main>

@@ -147,8 +147,8 @@ const groups: ThresholdGroup[] = [
     key: 'deviceAbnormal',
     icon: 'D',
     iconStyle: 'background:rgba(78,140,255,0.1);color:var(--blue)',
-    title: 'Device Abnormal',
-    subtitle: 'Thresholds for abnormal device behavior.',
+    title: 'Sensor Malfunction',
+    subtitle: 'Thresholds for sensor malfunction.',
     fields: [
       { key: 'abnormalWearDays', label: 'Wear days', hint: 'Use 0 when no wear-day gate is needed.', step: '1', min: 0, max: 30, integer: true },
       { key: 'temporaryAbnormalHours', label: 'Temporary abnormal duration (hours)', hint: 'Temporary abnormal status must last longer than this value before it qualifies.', step: '1', min: 1, max: 24, integer: true },
@@ -330,7 +330,7 @@ function save() {
   activeModal.value = {
     kind: 'success',
     title: 'Settings saved',
-    message: 'The updated values will be used for future detect runs.',
+    message: 'The updated values will be used for future detection runs.',
   };
 }
 
@@ -358,7 +358,7 @@ function closeModal() {
       <section v-if="!store.canManageThresholds.value" class="threshold-locked slide-up stagger-1">
         <h1>Threshold settings are managed by your dealer administrator.</h1>
         <p>
-          {{ store.currentAccount.value.organizationName }} can use the current dealer rule profile for detect,
+          {{ store.currentAccount.value.organizationName }} can use the current dealer rule profile for detection,
           but cannot edit after-sales thresholds.
         </p>
       </section>
@@ -366,11 +366,11 @@ function closeModal() {
       <div class="thresholds-hero slide-up stagger-1">
         <h2>After-sales condition settings</h2>
         <p>
-          Edit the values used by self-service detect rules.
+          Edit the values used by self-service detection rules.
         </p>
         <div class="threshold-scopes">
           <span class="badge badge-amber">Data accuracy</span>
-          <span class="badge badge-blue">Device Abnormal</span>
+          <span class="badge badge-blue">Sensor Malfunction</span>
           <span class="badge badge-purple">Sensor Falling Off</span>
           <span class="badge badge-teal">Application Failure</span>
         </div>

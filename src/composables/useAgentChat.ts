@@ -118,7 +118,7 @@ function inferFaultCategory(text: string): FaultCategory | undefined {
     return 'Sensor falling off';
   }
   if (/(warm|warm-up|abnormal|probe|temporary|initialization|sensor error|failed sensor)/.test(value)) {
-    return 'Sensor Abnormal';
+    return 'Sensor Malfunction';
   }
   if (/(inaccur|glucose|curve|flat|jump|low|reading|deviation|bias)/.test(value)) {
     return 'Data accuracy';
@@ -138,7 +138,7 @@ function resolveDevice(sn: string): Device | undefined {
 const MAJOR_SCENARIO_ORDER: FaultCategory[] = [
   'Data accuracy',
   'Application failure',
-  'Sensor Abnormal',
+  'Sensor Malfunction',
   'Sensor falling off',
 ];
 

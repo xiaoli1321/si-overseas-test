@@ -176,7 +176,7 @@ function formatSessionTime(value: string) {
           <div class="logo-mark">SI</div>
           SIBIONICS
         </div>
-        <div class="topbar-tagline">CGM AI servdesk</div>
+        <div class="topbar-tagline">CGM AI Service Desk</div>
       </div>
       <nav class="nav theme-adaptive-nav">
         <RouterLink
@@ -186,7 +186,7 @@ function formatSessionTime(value: string) {
           exact-active-class=""
           :class="{ active: isDeviceDetectNavActive }"
         >
-          Device detect
+          Device detection
         </RouterLink>
         <RouterLink class="top-nav-pill" active-class="active" to="/thresholds">Thresholds</RouterLink>
         <RouterLink
@@ -196,7 +196,7 @@ function formatSessionTime(value: string) {
           exact-active-class=""
           :class="{ active: isDetectRecordNavActive }"
         >
-          Detect records
+          Detection records
         </RouterLink>
       </nav>
     </div>
@@ -228,12 +228,12 @@ function formatSessionTime(value: string) {
       <div class="drawer-header">
         <div>
           <h3 id="help-drawer-title">Help Center</h3>
-          <p>Search workflow guidance, technical terms, quick videos, and support actions without leaving your current detect.</p>
+          <p>Search workflow guidance, technical terms, quick videos, and support actions without leaving your current detection.</p>
         </div>
         <button class="toolbar-icon-btn" type="button" aria-label="Close help drawer" @click="helpOpen = false">&times;</button>
       </div>
       <div class="drawer-body">
-        <p>Use SN search first. Results, dashboard cards, and detect records are generated only after you run a detect.</p>
+        <p>Use SN search first. Results, dashboard cards, and detection records are generated only after you run a detection.</p>
       </div>
     </section>
   </div>
@@ -252,7 +252,7 @@ function formatSessionTime(value: string) {
         <template v-else>
           <section v-if="processingSessions.length" class="drawer-card session-section">
             <h4>Processing</h4>
-            <p>Detect runs that are currently analyzing telemetry or evidence.</p>
+            <p>Detection runs that are currently analyzing sensor data or evidence.</p>
             <ul class="session-list">
               <li v-for="session in processingSessions" :key="session.id" class="session-item">
                 <div class="session-item-title">
@@ -264,7 +264,7 @@ function formatSessionTime(value: string) {
                 <p v-if="session.stepLabel" class="session-progress-copy">{{ session.stepLabel }} · {{ session.progress ?? 0 }}%</p>
                 <div class="session-actions">
                   <button class="btn btn-primary btn-sm" type="button" data-test="session-view-progress" @click="openSession(session)">View progress</button>
-                  <button class="btn btn-secondary btn-sm" type="button" @click="router.push({ name: 'fault-query', params: { categoryKey: keyForFaultCategory(session.faultCategory) } })">New detect</button>
+                  <button class="btn btn-secondary btn-sm" type="button" @click="router.push({ name: 'fault-query', params: { categoryKey: keyForFaultCategory(session.faultCategory) } })">New detection</button>
                 </div>
               </li>
             </ul>
@@ -282,13 +282,13 @@ function formatSessionTime(value: string) {
                 <span v-else>{{ session.faultCategory }} · {{ session.recordId }} · updated {{ formatSessionTime(session.updatedAt) }}</span>
                 <div class="session-actions">
                   <button class="btn btn-primary btn-sm" type="button" data-test="session-view-result" @click="openSession(session)">View result</button>
-                  <button class="btn btn-secondary btn-sm" type="button" @click="router.push({ name: 'fault-query', params: { categoryKey: keyForFaultCategory(session.faultCategory) } })">New detect</button>
+                  <button class="btn btn-secondary btn-sm" type="button" @click="router.push({ name: 'fault-query', params: { categoryKey: keyForFaultCategory(session.faultCategory) } })">New detection</button>
                 </div>
               </li>
             </ul>
           </section>
           <div class="drawer-actions session-manager-actions">
-            <button class="btn btn-secondary btn-sm" type="button" data-test="session-open-records" @click="openRecords">Open detect record</button>
+            <button class="btn btn-secondary btn-sm" type="button" data-test="session-open-records" @click="openRecords">Open detection record</button>
             <button class="btn btn-ghost btn-sm" type="button" data-test="session-clear" @click="clearSessions">Clear sessions</button>
           </div>
         </template>

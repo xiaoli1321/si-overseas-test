@@ -42,8 +42,8 @@ const selectedPathMatches = computed(() => (
 ));
 const otherPathMatches = computed(() => selectedDevices.value.length - selectedPathMatches.value);
 const runButtonLabel = computed(() => {
-  if (selectedDevices.value.length <= 1) return 'Run detect';
-  return `Run detect for ${selectedDevices.value.length} devices`;
+  if (selectedDevices.value.length <= 1) return 'Run detection';
+  return `Run detection for ${selectedDevices.value.length} devices`;
 });
 const batchComplete = computed(() => (
   resultRows.value.length > 0 && resultRows.value.every(row => row.status === 'complete')
@@ -249,7 +249,7 @@ onBeforeUnmount(clearTimers);
       <div class="fault-query-layout slide-up stagger-1">
         <aside class="fault-query-rail fault-query-shell">
           <button class="fault-query-back" type="button" @click="router.push({ name: 'chat' })">
-            <span aria-hidden="true">&larr;</span> Device detect
+            <span aria-hidden="true">&larr;</span> Device detection
           </button>
 
           <p class="fault-query-kicker">Check path</p>
@@ -354,7 +354,7 @@ onBeforeUnmount(clearTimers);
                 <p class="fault-query-kicker">Run status</p>
                 <h3>{{ batchComplete ? 'Multi-device results complete' : 'Running selected devices' }}</h3>
               </div>
-              <button class="btn btn-secondary btn-sm" type="button" :disabled="!batchComplete" @click="openRecords">Open detect records</button>
+              <button class="btn btn-secondary btn-sm" type="button" :disabled="!batchComplete" @click="openRecords">Open detection records</button>
             </div>
             <div class="multi-result-list">
               <article v-for="row in resultRows" :key="row.sessionId" class="multi-result-row" data-test="multi-result-row">

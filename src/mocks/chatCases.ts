@@ -39,7 +39,7 @@ const NL_BY_CATEGORY: Record<FaultCategory, string[]> = {
   'Sensor falling off': [
     'The sensor fell off during wear and will not stay attached.',
   ],
-  'Sensor Abnormal': [
+  'Sensor Malfunction': [
     'Abnormal sensor status after warm-up during initialization.',
     'Probe failure detected right after sensor start-up.',
     'Temporary sensor error that did not recover after 3 hours.',
@@ -52,7 +52,7 @@ const NL_BY_CATEGORY: Record<FaultCategory, string[]> = {
 const XLSX_SN_MATRIX: Array<{ sn: string; category: FaultCategory }> = [
   { sn: 'P2251212806JND44', category: 'Data accuracy' },
   { sn: 'P2251212809MRF71', category: 'Sensor falling off' },
-  { sn: 'P2251212810NSG88', category: 'Sensor Abnormal' },
+  { sn: 'P2251212810NSG88', category: 'Sensor Malfunction' },
   { sn: 'P2251212813RVK19', category: 'Application failure' },
 ];
 
@@ -132,17 +132,17 @@ export const CHAT_MOCK_CASES: ChatMockCase[] = [
 
 export const CHAT_AGENT_SCRIPTS = {
   major: (bracketLabel: string) =>
-    `According to our AIAgent's judgment, the type of device failure currently encountered by users may be **${bracketLabel}**, and you can click to enter the after-sales tool.`,
+    `Based on our AI agent's assessment, the current device fault is likely **${bracketLabel}**. Click to open the after-sales tool.`,
   offFour:
-    "According to our AIAgent's judgment, the system cannot solve the current user's fault type for the time being, please make a manual judgment.",
+    "Our AI agent could not determine the fault type for now. Please assess it manually.",
   unrelated:
-    'Sorry, the issue you describe now is not related to CGM for the time being, please redescribe or consult something related to CGM failure.',
+    'Sorry, the issue you described doesn't appear to be CGM-related. Please rephrase it, or ask about a CGM-related problem.',
 } as const;
 
 export const CHAT_SCRIPT_BRACKET: Record<FaultCategory, string> = {
   'Data accuracy': '[data accuracy]',
   'Application failure': '[implantation failure]',
-  'Sensor Abnormal': '[sensor abnormal]',
+  'Sensor Malfunction': '[Sensor Malfunction]',
   'Sensor falling off': '[detachment]',
 };
 
@@ -159,7 +159,7 @@ export const CHAT_MAJOR_SCENARIO_KEYWORDS: Record<FaultCategory, readonly string
     'insertion failed',
     'application site failure',
   ],
-  'Sensor Abnormal': [
+  'Sensor Malfunction': [
     'sensor abnormal',
     'abnormal after warm-up',
     'abnormal after warmup',
@@ -234,7 +234,7 @@ export const CHAT_SCRIPT_REPLY_MOCK_CASES: ChatMockCase[] = [
     id: 'script-major-alt-sensor-abnormal',
     kind: 'description_only',
     sn: 'P2251212810NSG88',
-    expectedCategory: 'Sensor Abnormal',
+    expectedCategory: 'Sensor Malfunction',
     turns: [{ text: 'abnormal sensor status' }],
     expectsResult: false,
     expectsNeedSn: true,
@@ -243,7 +243,7 @@ export const CHAT_SCRIPT_REPLY_MOCK_CASES: ChatMockCase[] = [
     id: 'script-major-en-sensor-abnormal',
     kind: 'description_only',
     sn: 'P2251212810NSG88',
-    expectedCategory: 'Sensor Abnormal',
+    expectedCategory: 'Sensor Malfunction',
     turns: [{ text: 'sensor abnormal after startup' }],
     expectsResult: false,
     expectsNeedSn: true,

@@ -1,14 +1,14 @@
 export type DeviceType = 'GS1';
 
-export type DeviceStatus = 'wearing' | 'completed' | 'abnormal';
+export type DeviceStatus = 'Wearing' | 'Completed' | 'Abnormal';
 
 export type FaultCategory =
   | 'Data accuracy'
   | 'Sensor falling off'
-  | 'Sensor Abnormal'
+  | 'Sensor Malfunction'
   | 'Application failure';
 
-export type AfterSalesResult = 'Replacement Eligible' | 'Not Eligible' | 'Under Review';
+export type AfterSalesResult = 'Warranty Eligible' | 'Not Eligible' | 'Under Review';
 
 export interface FaultMapping {
   faultCategory: FaultCategory;

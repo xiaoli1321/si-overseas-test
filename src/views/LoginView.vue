@@ -5,9 +5,9 @@ import { useDemoStore } from '@/composables/useDemoStore';
 import { CUSTOMER_EMAIL } from '@/mocks/devices';
 
 const TYPEWRITER_SENTENCES = [
-  'Device detect for overseas CGM support.',
-  'Threshold governance without changing your workflow.',
-  'Detect records stay intact across every review.',
+  'Device detection for overseas CGM support.',
+  'Manage thresholds without changing your workflow.',
+  'Detection records stay intact across every review.',
 ] as const;
 
 const TYPEWRITER_CONFIG = {
@@ -106,8 +106,8 @@ onBeforeUnmount(clearTypewriterTimer);
     <div class="login-shell">
       <div class="login-shell-content">
         <section class="login-story">
-          <div class="login-story-kicker">Device detect platform</div>
-          <h1 class="login-display">SIBIONICS CGM AI servdesk</h1>
+          <div class="login-story-kicker">Device detection platform</div>
+          <h1 class="login-display">SIBIONICS CGM AI Service Desk</h1>
           <div class="login-copy text-type" aria-live="polite">
             <span class="text-type__content">
               {{ typedLoginCopy }}
@@ -115,13 +115,13 @@ onBeforeUnmount(clearTypewriterTimer);
             <span class="text-type__cursor" :class="{ 'text-type__cursor--hidden': !showTypeCursor }">|</span>
           </div>
           <div class="login-pill-row">
-            <span class="login-pill">Device detect</span>
+            <span class="login-pill">Device detection</span>
             <span class="login-pill">Thresholds</span>
-            <span class="login-pill">Detect records</span>
+            <span class="login-pill">Detection records</span>
           </div>
           <div class="login-point-list">
             <div class="login-point">
-              <strong>Device detect</strong>
+              <strong>Device detection</strong>
               <span>If you already know the user's fault type, select a card to enter device selection. If you cannot determine it yet, describe the issue to AI and it will help identify the likely fault type.</span>
             </div>
             <div class="login-point">
@@ -129,7 +129,7 @@ onBeforeUnmount(clearTypewriterTimer);
               <span>Thresholds are condition values set by local administrators for different fault types based on after-sales policy.</span>
             </div>
             <div class="login-point">
-              <strong>Detect records</strong>
+              <strong>Detection records</strong>
               <span>Records preserve diagnostic evidence for after-sales review and track regional fault-type distribution so targeted improvement actions can be planned.</span>
             </div>
           </div>
@@ -144,10 +144,10 @@ onBeforeUnmount(clearTypewriterTimer);
                 <div>
                   <div class="login-eyebrow">Authorized Access</div>
                   <div class="login-title">SIBIONICS</div>
-                  <div class="login-tagline">CGM AI servdesk</div>
+                  <div class="login-tagline">CGM AI Service Desk</div>
                 </div>
               </div>
-              <p class="login-intro">Sign in to continue to fault detect, threshold governance, and detect-record review.</p>
+              <p class="login-intro">Sign in to continue with fault detection, threshold management, and detection-record review.</p>
             </div>
             <form class="login-form" @submit.prevent="login">
               <div class="form-group">

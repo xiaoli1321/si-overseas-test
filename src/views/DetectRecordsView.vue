@@ -25,7 +25,7 @@ const scenarioOptions: Array<{ value: 'all' | DetectRecord['faultCategory']; lab
   { value: 'all', label: 'All Scenarios' },
   { value: 'Data accuracy', label: 'Data accuracy' },
   { value: 'Sensor falling off', label: 'Sensor falling off' },
-  { value: 'Sensor Abnormal', label: 'Sensor Abnormal' },
+  { value: 'Sensor Malfunction', label: 'Sensor Malfunction' },
   { value: 'Application failure', label: 'Application failure' },
 ];
 const conclusionOptions: Array<{ value: 'all' | DetectRecord['conclusion']; label: string }> = [
@@ -209,7 +209,7 @@ function openRow(record: DetectRecord) {
 
 function exportCsv() {
   const rows = filteredRecords.value;
-  const header = ['Device SN', 'Type', 'Scenario', 'Subtype', 'Conclusion', 'After-sales', 'Adopted', 'Reject Reason', 'Timestamp', 'Reason'];
+  const header = ['Device SN', 'Type', 'Scenario', 'Subtype', 'Conclusion', 'After-sales', 'Accepted', 'Reject Reason', 'Timestamp', 'Reason'];
   const lines = [
     header.join(','),
     ...rows.map(record =>
@@ -244,9 +244,9 @@ function exportCsv() {
     <div class="page-body records-page-body" data-test="records-page-body">
       <div class="logs-header slide-up stagger-1">
         <div>
-          <h1>Detect records</h1>
+          <h1>Detection records</h1>
           <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 6px; max-width: 560px">
-            Immutable detect-record history: <strong>click any row</strong> to open the same verdict screen with result summary, reason card, device overview, optional supporting materials, and guidance. Filter, paginate, or export for QA.
+            Immutable detection-record history: <strong>click any row</strong> to open the same verdict screen with result summary, reason card, device overview, optional supporting materials, and guidance. Filter, paginate, or export for QA.
           </p>
         </div>
         <button class="btn btn-primary" type="button" data-test="records-export-csv" @click="exportCsv">&#8681; Export CSV</button>
@@ -386,7 +386,7 @@ function exportCsv() {
               <th>Subtype</th>
               <th>Conclusion</th>
               <th>After-sales</th>
-              <th>Adopted</th>
+              <th>Accepted</th>
               <th>Reject reason</th>
               <th>Timestamp</th>
             </tr>
@@ -394,7 +394,7 @@ function exportCsv() {
           <tbody>
             <tr v-if="!store.visibleRecords.value.length">
               <td colspan="9">
-                <div class="empty-state" style="padding: 28px">No detect records yet. Run a detect from Device detect to populate this log.</div>
+                <div class="empty-state" style="padding: 28px">No detection records yet. Run a detection from Device detection to populate this log.</div>
               </td>
             </tr>
             <tr v-else-if="!pageSlice.length">
@@ -423,8 +423,8 @@ function exportCsv() {
                 </span>
               </td>
               <td class="records-cell-wrap">
-                <span class="badge" :class="record.afterSales === 'Replacement Eligible' ? 'badge-teal' : 'badge-gray'">
-                  {{ record.afterSales === 'Replacement Eligible' ? 'Allowed' : 'Not allowed' }}
+                <span class="badge" :class="record.afterSales === 'Warranty Eligible' ? 'badge-teal' : 'badge-gray'">
+                  {{ record.afterSales === 'Warranty Eligible' ? 'Allowed' : 'Not allowed' }}
                 </span>
               </td>
               <td class="records-cell-wrap">

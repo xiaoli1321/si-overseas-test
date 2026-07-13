@@ -38,7 +38,7 @@ describe('useAgentChat judgeCase matrix', () => {
     expect(judgment.options.map(option => option.category)).toEqual([
       'Data accuracy',
       'Sensor falling off',
-      'Sensor Abnormal',
+      'Sensor Malfunction',
       'Application failure',
     ]);
   });

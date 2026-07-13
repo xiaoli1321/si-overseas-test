@@ -128,18 +128,18 @@ describe('DetectFlowView', () => {
     expect(wrapper.find('.implant-upload-status').text()).toContain('2 photo(s) uploaded');
   });
 
-  it('renders a full telemetry review form for non-upload fault types', async () => {
+  it('renders a full sensor review form for non-upload fault types', async () => {
     const { wrapper } = await mountDetect('Sensor falling off');
 
     expect(wrapper.find('#page-detect-form').exists()).toBe(true);
     expect(wrapper.find('.detect-review-pack').exists()).toBe(true);
-    expect(wrapper.find('.detect-review-pack').text()).toContain('Telemetry review pack');
+    expect(wrapper.find('.detect-review-pack').text()).toContain('Sensor review pack');
     expect(wrapper.find('.detect-review-grid').text()).toContain('Device state');
     expect(wrapper.find('.detect-review-grid').text()).not.toContain('After-sales service card');
   });
 
   it('uses light themed surfaces on the judgment form', async () => {
-    const { wrapper } = await mountDetect('Sensor Abnormal');
+    const { wrapper } = await mountDetect('Sensor Malfunction');
 
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
     expect(wrapper.find('.detect-form-card').exists()).toBe(true);
@@ -197,7 +197,7 @@ describe('DetectFlowView', () => {
 
     await wrapper.find('[data-test="verdict-adopt"]').trigger('click');
     expect(wrapper.find('.verdict-feedback--adopted').exists()).toBe(true);
-    expect(wrapper.find('[data-test="verdict-adopt-note"]').text()).toContain('Adopted');
+    expect(wrapper.find('[data-test="verdict-adopt-note"]').text()).toContain('Accepted');
     expect(store.records.value[0].verdictAdoption).toBe('Yes');
     expect(store.records.value[0].verdictRejectionReason).toBe('');
 
@@ -243,7 +243,7 @@ describe('DetectFlowView', () => {
     expect(wrapper.find('.verdict-hero-title').exists()).toBe(true);
   });
 
-  it('shows Back to Device detect and hides footer actions when opened from chat', async () => {
+  it('shows Back to Device detection and hides footer actions when opened from chat', async () => {
     const store = useDemoStore();
     const record = store.runDetect('P2251212806JND44', 'Data accuracy');
     const router = makeRouter();
@@ -264,7 +264,7 @@ describe('DetectFlowView', () => {
       global: { plugins: [router] },
     });
 
-    expect(wrapper.find('[data-test="detect-back"]').text()).toContain('Back to Device detect');
+    expect(wrapper.find('[data-test="detect-back"]').text()).toContain('Back to Device detection');
     expect(wrapper.find('.verdict-footer-actions').exists()).toBe(false);
 
     await wrapper.find('[data-test="detect-back"]').trigger('click');
@@ -274,7 +274,7 @@ describe('DetectFlowView', () => {
     expect(router.currentRoute.value.query.session).toBe('CHAT-test');
   });
 
-  it('returns to detect records and hides footer actions when opened from records list', async () => {
+  it('returns to detection records and hides footer actions when opened from records list', async () => {
     const store = useDemoStore();
     const record = store.runDetect('P2251212806JND44', 'Data accuracy');
     const router = makeRouter();
@@ -294,7 +294,7 @@ describe('DetectFlowView', () => {
       global: { plugins: [router] },
     });
 
-    expect(wrapper.find('[data-test="detect-back"]').text()).toContain('Back to Detect records');
+    expect(wrapper.find('[data-test="detect-back"]').text()).toContain('Back to Detection records');
     expect(wrapper.find('.verdict-footer-actions').exists()).toBe(false);
 
     await wrapper.find('[data-test="detect-back"]').trigger('click');

@@ -65,7 +65,7 @@ const visibleRecords = computed(() => {
 
 const dashboard = computed<DashboardStats>(() => ({
   total: visibleRecords.value.length,
-  allowed: visibleRecords.value.filter(record => record.afterSales === 'Replacement Eligible').length,
+  allowed: visibleRecords.value.filter(record => record.afterSales === 'Warranty Eligible').length,
   notAllowed: visibleRecords.value.filter(record => record.afterSales === 'Not Eligible').length,
   pending: visibleRecords.value.filter(record => record.afterSales === 'Under Review').length,
 }));

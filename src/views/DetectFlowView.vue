@@ -31,7 +31,7 @@ let processingCompletionTimer: number | undefined;
 const faultCategories: FaultCategory[] = [
   'Data accuracy',
   'Sensor falling off',
-  'Sensor Abnormal',
+  'Sensor Malfunction',
   'Application failure',
 ];
 
@@ -60,10 +60,10 @@ const isFromRecords = computed(() => route.query.from === 'records');
 const isFromDeviceDetect = computed(() => route.query.from === 'device-detect');
 
 const detectBackLabel = computed(() => {
-  if (isFromRecords.value) return 'Back to Detect records';
-  if (isFromChat.value) return 'Back to Device detect';
+  if (isFromRecords.value) return 'Back to Detection records';
+  if (isFromChat.value) return 'Back to Device detection';
   if (isFromDeviceDetect.value) {
-    return String(route.query.q ?? '').trim() ? 'Back to matched devices' : 'Back to Device detect';
+    return String(route.query.q ?? '').trim() ? 'Back to matched devices' : 'Back to Device detection';
   }
   if (isFromFaultQuery.value) return 'Back to lookup';
   return 'Back to Fault Query';
@@ -170,10 +170,10 @@ const latestRecord = computed(() => store.records.value.find(record => (
 )));
 
 const inaccuracyBackLabel = computed(() => {
-  if (isFromChat.value && latestRecord.value) return 'Back to Device detect';
-  if (isFromRecords.value && latestRecord.value) return 'Back to Detect records';
+  if (isFromChat.value && latestRecord.value) return 'Back to Device detection';
+  if (isFromRecords.value && latestRecord.value) return 'Back to Detection records';
   if (isFromDeviceDetect.value && latestRecord.value) {
-    return String(route.query.q ?? '').trim() ? 'Back to matched devices' : 'Back to Device detect';
+    return String(route.query.q ?? '').trim() ? 'Back to matched devices' : 'Back to Device detection';
   }
   return 'Back';
 });
@@ -206,15 +206,15 @@ const resultRuleLabel = computed(() => (
     : activeRuleLabel.value
 ));
 const verdictTone = computed(() => (
-  latestRecord.value?.afterSales === 'Replacement Eligible' ? 'fault' : 'blocked'
+  latestRecord.value?.afterSales === 'Warranty Eligible' ? 'fault' : 'blocked'
 ));
 const verdictBadge = computed(() => (
-  latestRecord.value?.afterSales === 'Replacement Eligible' ? 'WARRANTY ELIGIBLE' : 'NOT WARRANTY ELIGIBLE'
+  latestRecord.value?.afterSales === 'Warranty Eligible' ? 'WARRANTY ELIGIBLE' : 'NOT WARRANTY ELIGIBLE'
 ));
 const categoryKey = computed(() => {
   if (selectedCategory.value === 'Data accuracy') return 'inaccuracy';
   if (selectedCategory.value === 'Sensor falling off') return 'detachment';
-  if (selectedCategory.value === 'Sensor Abnormal') return 'sensor';
+  if (selectedCategory.value === 'Sensor Malfunction') return 'sensor';
   return 'implant';
 });
 const isFault = computed(() => latestRecord.value?.conclusion === 'Issue Detected');
@@ -224,15 +224,15 @@ const verdictTitle = computed(() => {
     ? 'No qualifying curve pattern detected'
     : latestRecord.value.faultSubtype;
   if (categoryKey.value === 'detachment') return isFault.value ? 'Fall-out detected' : 'Fall-out not detected';
-  if (categoryKey.value === 'sensor') return isFault.value ? latestRecord.value.faultSubtype : 'No abnormality detected';
+  if (categoryKey.value === 'sensor') return isFault.value ? latestRecord.value.faultSubtype : 'No malfunction detected';
   return isFault.value ? 'Application failure detected' : 'No application failure detected';
 });
 const recommendationClass = computed(() => (
-  latestRecord.value?.afterSales === 'Replacement Eligible' ? 'ok' : 'warn'
+  latestRecord.value?.afterSales === 'Warranty Eligible' ? 'ok' : 'warn'
 ));
 const recommendationCopy = computed(() => {
   if (!latestRecord.value) return '';
-  if (latestRecord.value.afterSales === 'Replacement Eligible') {
+  if (latestRecord.value.afterSales === 'Warranty Eligible') {
     return 'You can continue to after-sales from this result.';
   }
   if (latestRecord.value.afterSales === 'Under Review') {
@@ -313,7 +313,7 @@ const reasonRows = computed(() => {
   if (categoryKey.value === 'detachment') {
     return [
       { k: 'What we found', v: `${isFault.value ? 'An abnormal detachment-like state is present.' : 'No confirmed detachment signal is present.'}<ul class="verdict-rich-list"><li>Current state: <strong>${device.value?.status}</strong>.</li><li>Last upload: <strong>${device.value?.lastDataAt}</strong>.</li></ul>`, cls: 'subtle' },
-      { k: 'Why this result', v: `${isFault.value ? 'The fall-out after-sales rule is met.' : 'The fall-out after-sales rule is not met.'}<ul class="verdict-rich-list"><li>${isFault.value ? 'This path requires an abnormal device state with recent abnormal telemetry, and the current record matches that rule.' : 'This path only accepts abnormal devices, and the current state does not meet that requirement.'}</li></ul>`, cls: 'subtle' },
+      { k: 'Why this result', v: `${isFault.value ? 'The fall-out after-sales rule is met.' : 'The fall-out after-sales rule is not met.'}<ul class="verdict-rich-list"><li>${isFault.value ? 'This path requires an abnormal device state with recent abnormal sensor data, and the current record matches that rule.' : 'This path only accepts abnormal devices, and the current state does not meet that requirement.'}</li></ul>`, cls: 'subtle' },
       ...(isFault.value ? [{ k: 'Possible causes', v: 'Possible causes can be shown cautiously.<ul class="verdict-rich-list"><li>Collision, scratching, sweat, or other handling may have loosened the sensor.</li></ul>', cls: 'subtle' }] : []),
     ];
   }
@@ -352,9 +352,9 @@ const nextStepItems = computed(() => {
       '<strong>Next action:</strong> Enter the blood sugar deviation judgment and collect two paired CGM/BGM image groups for comparison.',
     ];
   }
-  if (latestRecord.value.afterSales === 'Replacement Eligible') {
+  if (latestRecord.value.afterSales === 'Warranty Eligible') {
     const why = categoryKey.value === 'detachment'
-      ? 'The device is already in an abnormal state and the fall-out rule is satisfied by the current telemetry.'
+      ? 'The device is already in an abnormal state and the fall-out rule is satisfied by the current sensor data.'
       : categoryKey.value === 'sensor'
         ? 'The current record matches the supported sensor-abnormality rule for this path.'
         : categoryKey.value === 'implant'
@@ -406,24 +406,24 @@ const categoryInfo = computed(() => {
         'At least two site photos are required before submission.',
         'No manual sub-type selection is needed for this path.',
       ],
-      primaryLabel: 'Run implant detect',
+      primaryLabel: 'Run detection',
     };
   }
   if (category === 'Sensor falling off') {
     return {
       title: 'Sensor falling off',
-      subtitle: 'No supporting materials are shown. The result is judged directly from device status and telemetry timing.',
+      subtitle: 'No supporting materials are shown. The result is judged directly from device status and sensor timing.',
       guidanceType: 'guidance-teal',
       guidanceTitle: 'Instant run',
       guidanceItems: [
         'Check abnormal device state, last upload, anomaly timeline, and wear window.',
         'No image upload is required for this scenario.',
       ],
-      primaryLabel: 'Run detect',
+      primaryLabel: 'Run detection',
     };
   }
   return {
-    title: 'Sensor Abnormal',
+    title: 'Sensor Malfunction',
     subtitle: 'Evaluate initialization, in-use abnormality, temporary recovery, and sensor failure paths.',
     guidanceType: 'guidance-teal',
     guidanceTitle: 'Instant run',
@@ -431,13 +431,13 @@ const categoryInfo = computed(() => {
       'Check sensor status, initialization phase, anomaly timeline, and recovery status.',
       'No image upload is required for this scenario.',
     ],
-    primaryLabel: 'Run detect',
+    primaryLabel: 'Run detection',
   };
 });
 const implantUploadStatus = computed(() => {
   if (implantPhotoCount.value >= 2) return `${implantPhotoCount.value} photo(s) uploaded; minimum met (>=2 required for application-failure path).`;
   if (uploadError.value) return uploadError.value;
-  return `${implantPhotoCount.value} / 2 minimum; add at least ${2 - implantPhotoCount.value} more photo(s) before running application-failure detect.`;
+  return `${implantPhotoCount.value} / 2 minimum; add at least ${2 - implantPhotoCount.value} more photo(s) before running application-failure detection.`;
 });
 const deviationUploadStatus = computed(() => {
   if (deviationImageCount.value >= 4) return '2 / 2 CGM/BGM groups uploaded; minimum met.';
@@ -454,16 +454,16 @@ const processingSteps = computed(() => {
     return [...base, 'Running persistent low detection', 'Scanning for flat-line patterns', 'Checking jump point anomalies', 'Generating conclusion'];
   }
   if (selectedCategory.value === 'Sensor falling off') {
-    return [...base, 'Check abnormal device state (fall-off intake)', 'Load last upload & anomaly timeline', 'Verify service card on file', 'Build verdict'];
+    return [...base, 'Check abnormal device state (fall-off check)', 'Load last upload & anomaly timeline', 'Verify service card on file', 'Build verdict'];
   }
-  if (selectedCategory.value === 'Sensor Abnormal') {
+  if (selectedCategory.value === 'Sensor Malfunction') {
     return [...base, 'Checking sensor status', 'Evaluating initialization phase', 'Analyzing anomaly timeline', 'Determining recovery status', 'Generating conclusion'];
   }
   return [
-    'Retrieving device & ticket bundle',
-    'Verifying activation in CGM core',
-    `Ingesting ${implantPhotoCount.value || 2} site photo(s) (minimum 2)`,
-    'Running VLM classification on implant photos',
+    'Retrieving device & ticket data',
+    'Verifying activation in the CGM system',
+    `Importing ${implantPhotoCount.value || 2} site photo(s) (minimum 2)`,
+    'Running VLM classification on site photos',
     'Correlating VLM sub-type with fault rules',
     'Checking after-sales service card on file',
     'Generating conclusion',
@@ -552,7 +552,7 @@ onBeforeUnmount(() => {
 
 function runDetect() {
   if (selectedCategory.value === 'Application failure' && implantPhotoCount.value < 2) {
-    uploadError.value = `0 / 2 minimum; add at least ${2 - implantPhotoCount.value} more photo(s) before running application-failure detect.`;
+    uploadError.value = `0 / 2 minimum; add at least ${2 - implantPhotoCount.value} more photo(s) before running application-failure detection.`;
     return;
   }
   if (selectedCategory.value === 'Data accuracy' && store.requiresDataDeviationReview(props.sn, selectedCategory.value)) {
@@ -651,7 +651,7 @@ function submitInaccuracyDeviation() {
               </div>
               <div class="detect-review-pack detect-light-surface">
                 <div class="result-panel-head">
-                  <span>{{ selectedCategory === 'Sensor falling off' ? 'Telemetry review pack' : 'Sensor status review pack' }}</span>
+                  <span>{{ selectedCategory === 'Sensor falling off' ? 'Sensor review pack' : 'Sensor status review pack' }}</span>
                   <span class="result-tag-pill">No upload required</span>
                 </div>
                 <div class="detect-review-grid">
@@ -735,7 +735,7 @@ function submitInaccuracyDeviation() {
           </div>
           <div class="processing-right">
             <h2>Analyzing device data</h2>
-            <p id="processing-subtitle">Streaming telemetry, rule packs, and optional vision checks for a full verdict.</p>
+            <p id="processing-subtitle">Processing sensor data, rule packs, and optional vision checks for a full verdict.</p>
             <div id="processing-steps" class="processing-steps">
               <div v-for="(step, index) in processingSteps" :key="step" class="proc-step" :class="{ done: processingComplete || index < processingStep, active: !processingComplete && index === processingStep }">
                 <div class="proc-step-icon">{{ processingComplete || index < processingStep ? 'Done' : index === processingStep ? 'Now' : 'Next' }}</div>
@@ -822,7 +822,7 @@ function submitInaccuracyDeviation() {
                     data-test="verdict-adopt"
                     @click="selectVerdictAdopt"
                   >
-                    Adopt
+                    Accept
                   </button>
                   <button
                     class="btn verdict-feedback-btn verdict-feedback-btn--reject"
@@ -862,7 +862,7 @@ function submitInaccuracyDeviation() {
                   Submitted; your rejection feedback has been recorded.
                 </p>
                 <p v-if="verdictDecision === 'adopt'" class="verdict-feedback-note verdict-feedback-note--adopt" data-test="verdict-adopt-note">
-                  Adopted; marked as the recommended basis for this case.
+                  Accepted; marked as the recommended basis for this case.
                 </p>
                 <p v-else-if="verdictDecision === 'reject' && rejectSubmitted" class="verdict-feedback-note verdict-feedback-note--reject" data-test="verdict-reject-note">
                   Rejected{{ rejectComment.trim() ? `: ${rejectComment.trim()}` : '' }}.
