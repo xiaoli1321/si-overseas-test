@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, watchEffect, nextTick, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { keyForFaultCategory } from '@/composables/faultCategories';
+import { keyForFaultCategory, faultCategoryLabel, afterSalesLabel } from '@/composables/faultCategories';
 import { useDemoStore } from '@/composables/useDemoStore';
 import { backendApi } from '@/api/backend';
 import { formatDeviceTime, formatDurationHours, formatDurationText } from '@/utils/date';
@@ -394,7 +394,7 @@ const verdictTitle = computed(() => {
     ? 'No qualifying curve pattern detected'
     : latestRecord.value.faultSubtype;
   if (categoryKey.value === 'detachment') return isFault.value ? 'Fall-out detected' : 'Fall-out not detected';
-  if (categoryKey.value === 'sensor') return isFault.value ? latestRecord.value.faultSubtype : 'No abnormality detected';
+  if (categoryKey.value === 'sensor') return isFault.value ? latestRecord.value.faultSubtype : 'No malfunction detected';
   return isFault.value ? 'Application failure detected' : 'No application failure detected';
 });
 const recommendationClass = computed(() => (
@@ -418,7 +418,7 @@ const heroSummary = computed(() => {
   if (categoryKey.value === 'inaccuracy') {
     if (latestRecord.value.faultSubtype.includes('Fraud')) return 'Evidence verification failed: Screen reproduction (fraudulent photo) detected.';
     if (latestRecord.value.faultSubtype.includes('Accuracy Within Normal Limits')) return 'Sensor accuracy is within acceptable limits. One or more CGM/BGM groups do not show significant deviation.';
-    if (!isFault.value) return 'Cannot directly enter after-sales based on the first-round curve result. Continue with the CGM/BGM image comparison step.';
+    if (!isFault.value) return 'The initial curve analysis results alone cannot determine after-sales eligibility. Please proceed with the CGM/BGM image comparison process.';
     if (latestRecord.value.faultSubtype.includes('Persistent Low')) return 'The glucose curve has been low recently, please see "Basis for the Verdict" below for details';
     if (latestRecord.value.faultSubtype.includes('No Fluctuation')) return 'The recent blood glucose curve shows a long gentle range with minimal change. For details, see "Basis for the Verdict" below';
     if (latestRecord.value.faultSubtype.includes('Data Deviation')) {
@@ -442,9 +442,9 @@ const heroSummary = computed(() => {
       : 'The current record does not show a confirmed sensor fall-off pattern.';
   }
   if (categoryKey.value === 'sensor') {
-    if (!isFault.value) return 'No abnormal sensor status is currently detected on this device, so after-sales support is not available.';
+    if (!isFault.value) return 'No abnormal sensor status has been detected on this device; therefore, after-sales support cannot be provided.';
     if (latestRecord.value.faultSubtype.includes('Initialization')) return 'The device shows an abnormality during initialization.';
-    if (latestRecord.value.faultSubtype.includes('Temporary')) return 'Temporary sensor abnormality. Check again in 3 hours to see whether the device returns to normal.';
+    if (latestRecord.value.faultSubtype.includes('Temporary')) return 'Temporary sensor abnormality detected. Please check again after 3 hours to confirm whether the device has returned to normal.';
     if (latestRecord.value.faultSubtype.includes('Probe')) return 'The current sensor has failed and cannot be reactivated.';
     return 'Keep wearing the device unless it has already fallen off or support instructs removal.';
   }
@@ -947,20 +947,20 @@ const categoryInfo = computed(() => {
         'At least two site photos are required before submission.',
         'No manual sub-type selection is needed for this path.',
       ],
-      primaryLabel: 'Run implant detect',
+      primaryLabel: 'Run detection',
     };
   }
   if (category === 'Sensor falling off') {
     return {
       title: 'Sensor falling off',
-      subtitle: 'No supporting materials are shown. The result is judged directly from device status and telemetry timing.',
+      subtitle: 'No supporting materials are shown. The result is judged directly from device status and sensor timing.',
       guidanceType: 'guidance-teal',
       guidanceTitle: 'Instant run',
       guidanceItems: [
         'Check abnormal device state, last upload, anomaly timeline, and wear window.',
         'No image upload is required for this scenario.',
       ],
-      primaryLabel: 'Run detect',
+      primaryLabel: 'Run detection',
     };
   }
   return {
@@ -972,13 +972,13 @@ const categoryInfo = computed(() => {
       'Check sensor status, initialization phase, anomaly timeline, and recovery status.',
       'No image upload is required for this scenario.',
     ],
-    primaryLabel: 'Run detect',
+    primaryLabel: 'Run detection',
   };
 });
 const implantUploadStatus = computed(() => {
   if (implantPhotoCount.value >= 2) return `${implantPhotoCount.value} photo(s) uploaded; minimum met (>=2 required for application-failure path).`;
   if (uploadError.value) return uploadError.value;
-  return `${implantPhotoCount.value} / 2 minimum; add at least ${2 - implantPhotoCount.value} more photo(s) before running application-failure detect.`;
+  return `${implantPhotoCount.value} / 2 minimum; add at least ${2 - implantPhotoCount.value} more photo(s) before running application-failure detection.`;
 });
 const deviationUploadStatus = computed(() => {
   if (deviationImageCount.value >= 4) return '2 / 2 CGM/BGM groups uploaded; minimum met.';
@@ -1503,7 +1503,7 @@ onBeforeUnmount(() => {
 
 function runDetect() {
   if (selectedCategory.value === 'Application failure' && implantPhotoCount.value < 2) {
-    uploadError.value = `0 / 2 minimum; add at least ${2 - implantPhotoCount.value} more photo(s) before running application-failure detect.`;
+    uploadError.value = `0 / 2 minimum; add at least ${2 - implantPhotoCount.value} more photo(s) before running application-failure detection.`;
     return;
   }
   startProcessing();
@@ -1612,7 +1612,7 @@ function goToUploadFlow() {
               </div>
               <div class="detect-review-pack detect-light-surface">
                 <div class="result-panel-head">
-                  <span>{{ selectedCategory === 'Sensor falling off' ? 'Telemetry review pack' : 'Sensor status review pack' }}</span>
+                  <span>{{ selectedCategory === 'Sensor falling off' ? 'Sensor review pack' : 'Sensor status review pack' }}</span>
                   <span class="result-tag-pill">No upload required</span>
                 </div>
                 <div class="detect-review-grid">
@@ -1761,7 +1761,7 @@ function goToUploadFlow() {
         <div v-else class="verdict-page">
           <button class="btn btn-ghost btn-sm slide-up stagger-1" style="margin-bottom:10px" type="button" data-test="detect-back" @click="backFromDetect">&#8592; {{ detectBackLabel }}</button>
           <div class="verdict-bc slide-up stagger-1">
-            Devices <span class="sep">/</span> <span class="mono">{{ device.sn }}</span> <span class="sep">/</span> <strong>{{ latestRecord.faultCategory }}</strong>
+            Devices <span class="sep">/</span> <span class="mono">{{ device.sn }}</span> <span class="sep">/</span> <strong>{{ faultCategoryLabel(latestRecord.faultCategory) }}</strong>
           </div>
 
           <div class="verdict-page-layout">
@@ -1776,7 +1776,7 @@ function goToUploadFlow() {
                   </div>
                   <h2 class="verdict-hero-title">{{ formatReasonValue(verdictTitle) }}</h2>
                   <div class="verdict-hero-summary">
-                    <div class="verdict-hero-subline">{{ latestRecord.conclusion }} / {{ latestRecord.afterSales }} &bull; {{ resultRuleLabel }}</div>
+                    <div class="verdict-hero-subline">{{ latestRecord.conclusion }} / {{ afterSalesLabel(latestRecord.afterSales) }} &bull; {{ resultRuleLabel }}</div>
                     <div class="verdict-hero-detail">{{ formatReasonValue(heroSummary) }}</div>
                     <div class="verdict-hero-history">{{ historyLookback }}</div>
                   </div>
@@ -1849,7 +1849,7 @@ function goToUploadFlow() {
                     data-test="verdict-adopt"
                     @click="selectVerdictAdopt"
                   >
-                    Adopt
+                    Accept
                   </button>
                   <button
                     class="btn verdict-feedback-btn verdict-feedback-btn--reject"
@@ -1889,7 +1889,7 @@ function goToUploadFlow() {
                   Submitted; your rejection feedback has been recorded.
                 </p>
                 <p v-if="verdictDecision === 'adopt'" class="verdict-feedback-note verdict-feedback-note--adopt" data-test="verdict-adopt-note">
-                  Adopted; marked as the recommended basis for this case.
+                  Accepted; marked as the recommended basis for this case.
                 </p>
                 <p v-else-if="verdictDecision === 'reject' && rejectSubmitted" class="verdict-feedback-note verdict-feedback-note--reject" data-test="verdict-reject-note">
                   Rejected{{ rejectComment.trim() ? `: ${rejectComment.trim()}` : '' }}.

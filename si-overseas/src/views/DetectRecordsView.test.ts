@@ -38,7 +38,7 @@ describe('DetectRecordsView', () => {
     useDemoStore().resetDemoState();
   });
 
-  it('renders detect records with the reference table badges and no Rules column', async () => {
+  it('renders detection records with the reference table badges and no Rules column', async () => {
     const store = useDemoStore();
     store.runDetect('P2251212806JND44', 'Sensor falling off');
     store.runDetect('P2251212806JND44', 'Data accuracy');
@@ -124,7 +124,7 @@ describe('DetectRecordsView', () => {
     expect(wrapper.find('tbody').text()).toContain('Photos are blurry');
   });
 
-  it('exports detect records without initiator or organization columns', async () => {
+  it('exports detection records without initiator or organization columns', async () => {
     const store = useDemoStore();
     store.runDetect('P2251212806JND44', 'Sensor falling off');
     const createObjectURL = vi.fn((blob: Blob) => {

@@ -116,7 +116,7 @@ describe('FaultQueryView', () => {
 
     expect(router.currentRoute.value.name).toBe('fault-query');
     expect(wrapper.find('[data-test="selected-devices"]').text()).toContain('P2251212806JND44');
-    expect(wrapper.find('[data-test="run-selected"]').text()).toBe('Run detect');
+    expect(wrapper.find('[data-test="run-selected"]').text()).toBe('Run detection');
 
     await wrapper.find('[data-test="run-selected"]').trigger('click');
     await flushPromises();
@@ -270,7 +270,7 @@ describe('FaultQueryView', () => {
     await wrapper.find('form').trigger('submit');
     await flushPromises();
 
-    expect(wrapper.find('[data-test="run-selected"]').text()).toBe('Run detect for 2 devices');
+    expect(wrapper.find('[data-test="run-selected"]').text()).toBe('Run detection for 2 devices');
     await wrapper.find('[data-test="run-selected"]').trigger('click');
     await flushPromises();
 

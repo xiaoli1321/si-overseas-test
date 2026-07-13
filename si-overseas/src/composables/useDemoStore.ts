@@ -878,8 +878,8 @@ function mockPresentationForRecord(record: DetectRecord, device?: Device): Verdi
 
     let scenarioKey = 'sensor_abnormal.no_abnormality';
     let badge = 'NOT WARRANTY ELIGIBLE';
-    let title = 'No abnormality detected';
-    let summary = 'No abnormal sensor status is currently detected on this device, so after-sales support is not available.';
+    let title = 'No malfunction detected';
+    let summary = 'No abnormal sensor status has been detected on this device; therefore, after-sales support cannot be provided.';
     let whatWeFound = 'The current device entered the sensor abnormality review, but no abnormal conclusion was formed; display the current stage, status / clasp status, and latest signal time.';
     let whyThisResult = 'The confirmed sensor abnormality rule is not hit.';
     let possibleCauses = '';

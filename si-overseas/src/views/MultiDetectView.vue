@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { keyForFaultCategory } from '@/composables/faultCategories';
+import { keyForFaultCategory, faultCategoryLabel, afterSalesLabel } from '@/composables/faultCategories';
 import { useDemoStore } from '@/composables/useDemoStore';
 import { formatDeviceTime, formatDurationHours, formatDurationText } from '@/utils/date';
 import type { Device, FaultCategory } from '@/types/device';
@@ -252,7 +252,7 @@ onBeforeUnmount(clearTimers);
           <div>
             <p class="multi-kicker">Same fault multi-device run</p>
             <h1>{{ selectedCategory }}</h1>
-            <p>All selected devices are being checked against the same fault type. Device-level rows show activation time, telemetry context, service-card status, processing progress, and final verdict.</p>
+            <p>All selected devices are being checked against the same fault type. Device-level rows show activation time, sensor context, service-card status, processing progress, and final verdict.</p>
           </div>
           <div class="multi-summary" data-test="multi-summary">
             <article>
@@ -305,7 +305,7 @@ onBeforeUnmount(clearTimers);
           <div class="multi-device-grid">
             <div class="multi-fact">
               <span>Mapped scenario</span>
-              <strong>{{ row.device?.fault?.faultCategory ?? 'Unknown' }}</strong>
+              <strong>{{ faultCategoryLabel(row.device?.fault?.faultCategory) || 'Unknown' }}</strong>
             </div>
             <div class="multi-fact">
               <span>Device state</span>
@@ -341,7 +341,7 @@ onBeforeUnmount(clearTimers);
           </div>
 
           <div v-if="row.record" class="multi-result-detail">
-            <strong>{{ row.record.conclusion }} / {{ row.record.afterSales }}</strong>
+            <strong>{{ row.record.conclusion }} / {{ afterSalesLabel(row.record.afterSales) }}</strong>
             <p>{{ formatDurationText(row.record.reasonSummary) }}</p>
           </div>
         </article>

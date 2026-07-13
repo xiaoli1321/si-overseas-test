@@ -243,8 +243,8 @@ function goBackToPreviousPage() {
 
 const meta = computed(() => faultMetaForKey(props.categoryKey));
 const runButtonLabel = computed(() => {
-  if (selectedDevices.value.length <= 1) return 'Run detect';
-  return `Run detect for ${selectedDevices.value.length} devices`;
+  if (selectedDevices.value.length <= 1) return 'Run detection';
+  return `Run detection for ${selectedDevices.value.length} devices`;
 });
 const batchComplete = computed(() => (
   resultRows.value.length > 0 && resultRows.value.every(row => row.status === 'complete')
@@ -522,7 +522,7 @@ onBeforeUnmount(clearTimers);
           </div>
 
           <p class="fault-query-rail-note">
-            Add one or more devices. Every selected device will be checked against this same fault type.
+            Add one or more devices. Each selected device will be checked for the same issue type.
           </p>
         </aside>
 

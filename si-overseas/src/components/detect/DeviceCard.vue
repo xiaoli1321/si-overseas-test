@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faultCategoryLabel } from '@/composables/faultCategories';
 import { computed } from 'vue';
 import { formatDeviceTime, formatDurationHours } from '@/utils/date';
 import type { Device, FaultCategory } from '@/types/device';
@@ -46,7 +47,7 @@ const wearTime = computed(() => formatDurationHours(props.device.wearDays * 24 +
         <span>Last data {{ device.lastDataAt }}</span>
       </span>
       <span class="device-card-action">
-        <span>Continue with {{ selectedPathCategory ?? device.fault?.faultCategory ?? 'No mapped fault' }}</span>
+        <span>Continue with {{ faultCategoryLabel(selectedPathCategory ?? device.fault?.faultCategory) || 'No mapped fault' }}</span>
         <span class="device-card-chevron" aria-hidden="true">&rarr;</span>
       </span>
     </span>

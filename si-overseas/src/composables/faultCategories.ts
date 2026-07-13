@@ -77,3 +77,13 @@ export function faultMetaForKey(key: string) {
 export function keyForFaultCategory(category: FaultCategory) {
   return faultMetaForCategory(category).key;
 }
+
+export function faultCategoryLabel(category?: string | null): string {
+  if (!category) return '';
+  const meta = FAULT_CATEGORY_META.find(item => item.category === category);
+  return meta ? meta.title : category;
+}
+
+export function afterSalesLabel(value?: string | null): string {
+  return value === 'Replacement Eligible' ? 'Warranty Eligible' : (value ?? '');
+}

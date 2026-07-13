@@ -136,17 +136,17 @@ export const CHAT_MOCK_CASES: ChatMockCase[] = [
 
 export const CHAT_AGENT_SCRIPTS = {
   major: (bracketLabel: string) =>
-    `According to our AIAgent's judgment, the type of device failure currently encountered by users may be **${bracketLabel}**, and you can click to enter the after-sales tool.`,
+    `Based on our AI agent's assessment, the current device fault is likely **${bracketLabel}**. Click to open the after-sales tool.`,
   offFour:
-    "According to our AIAgent's judgment, the system cannot solve the current user's fault type for the time being, please make a manual judgment.",
+    "Our AI agent could not determine the fault type for now. Please assess it manually.",
   unrelated:
-    'Sorry, the issue you describe now is not related to CGM for the time being, please redescribe or consult something related to CGM failure.',
+    'Sorry, the issue you described doesn't appear to be CGM-related. Please rephrase it, or ask about a CGM-related problem.',
 } as const;
 
 export const CHAT_SCRIPT_BRACKET: Record<FaultCategory, string> = {
   'Data accuracy': '[data accuracy]',
   'Application failure': '[implantation failure]',
-  'Sensor Abnormal': '[sensor abnormal]',
+  'Sensor Abnormal': '[Sensor Malfunction]',
   'Sensor falling off': '[detachment]',
 };
 

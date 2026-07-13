@@ -9,7 +9,7 @@ describe('useDemoStore', () => {
     store.resetDemoState();
   });
 
-  it('starts with no detect records and an empty dashboard', () => {
+  it('starts with no detection records and an empty dashboard', () => {
     const store = useDemoStore();
 
     expect(store.records.value).toEqual([]);
@@ -143,7 +143,7 @@ describe('useDemoStore', () => {
     expect(store.dashboard.value.allowed + store.dashboard.value.notAllowed + store.dashboard.value.pending).toBe(2);
   });
 
-  it('keeps repeated detect runs for the same SN as separate records', () => {
+  it('keeps repeated detection runs for the same SN as separate records', () => {
     const store = useDemoStore();
     const sn = MOCK_DEVICES[0].sn;
 
@@ -193,7 +193,7 @@ describe('useDemoStore', () => {
     expect(record.region).toBe('Unassigned region');
   });
 
-  it('scopes visible detect records to the signed-in dealer', () => {
+  it('scopes visible detection records to the signed-in dealer', () => {
     const store = useDemoStore();
 
     const firstRecord = store.runDetect(MOCK_DEVICES[0].sn, 'Sensor falling off');
@@ -203,7 +203,7 @@ describe('useDemoStore', () => {
     expect(store.visibleRecords.value.every(record => record.dealerId === store.currentAccount.value.dealerId)).toBe(true);
   });
 
-  it('seeds default dealer detect records on first load', () => {
+  it('seeds default dealer detection records on first load', () => {
     const store = useDemoStore();
 
     store.ensureDefaultDetectRecords();
@@ -213,7 +213,7 @@ describe('useDemoStore', () => {
     expect(store.visibleRecords.value.every(record => record.organizationName === 'Chris Overseas Dealer')).toBe(true);
   });
 
-  it('adds missing default detect records without duplicating existing seed rows', () => {
+  it('adds missing default detection records without duplicating existing seed rows', () => {
     const store = useDemoStore();
     const manualRecord = store.runDetect(MOCK_DEVICES[0].sn, 'Data accuracy');
 
@@ -231,7 +231,7 @@ describe('useDemoStore', () => {
     expect(store.canManageThresholds.value).toBe(true);
   });
 
-  it('tracks processing sessions separately from completed detect records', () => {
+  it('tracks processing sessions separately from completed detection records', () => {
     const store = useDemoStore();
 
     const session = store.startDetectSession('P2251212806JND44', 'Sensor falling off');

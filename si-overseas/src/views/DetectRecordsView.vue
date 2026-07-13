@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faultCategoryLabel } from '@/composables/faultCategories';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import DashboardCards from '@/components/records/DashboardCards.vue';
@@ -46,7 +47,7 @@ const scenarioOptions: Array<{ value: 'all' | DetectRecord['faultCategory']; lab
   { value: 'all', label: 'All Scenarios' },
   { value: 'Data accuracy', label: 'Data accuracy' },
   { value: 'Sensor falling off', label: 'Sensor falling off' },
-  { value: 'Sensor Abnormal', label: 'Sensor Abnormal' },
+  { value: 'Sensor Abnormal', label: 'Sensor Malfunction' },
   { value: 'Application failure', label: 'Application failure' },
 ];
 const conclusionOptions: Array<{ value: 'all' | DetectRecord['conclusion']; label: string }> = [
@@ -422,7 +423,7 @@ function exportCsv() {
 
   // Offline mode: local CSV export (unchanged)
   const rows = localFilteredRecords.value;
-  const header = ['Device Identifier', 'Type', 'Scenario', 'Subtype', 'Conclusion', 'After-sales', 'Adopted', 'Reject Reason', 'Timestamp', 'Reason'];
+  const header = ['Device Identifier', 'Type', 'Scenario', 'Subtype', 'Conclusion', 'After-sales', 'Accepted', 'Reject Reason', 'Timestamp', 'Reason'];
   const lines = [
     header.join(','),
     ...rows.map(record =>
@@ -459,7 +460,7 @@ function exportCsv() {
         <div>
           <h1>Detection History</h1>
           <p style="color: var(--text-secondary); font-size: var(--text-sm); margin-top: 6px; max-width: 560px">
-            Immutable detect-record history: <strong>click any row</strong> to open the same verdict screen with result summary, reason card, device overview, optional supporting materials, and guidance. Filter, paginate, or export for QA.
+            Immutable detection-record history: <strong>click any row</strong> to open the same verdict screen with result summary, reason card, device overview, optional supporting materials, and guidance. Filter, paginate, or export for QA.
           </p>
         </div>
         <button class="btn btn-primary" type="button" data-test="records-export-csv" @click="exportCsv">&#8681; Export CSV</button>
@@ -624,7 +625,7 @@ function exportCsv() {
               <th>Subtype</th>
               <th>Conclusion</th>
               <th>After-sales</th>
-              <th>Adopted</th>
+              <th>Accepted</th>
               <th>Reject reason</th>
               <th>Timestamp</th>
               <th>Actions</th>
@@ -664,7 +665,7 @@ function exportCsv() {
               </td>
               <td class="mono records-cell-wrap records-cell-sn">{{ record.sn }}</td>
               <td class="records-cell-wrap"><span class="badge badge-teal">{{ record.deviceType }}</span></td>
-              <td class="records-cell-wrap">{{ record.faultCategory }}</td>
+              <td class="records-cell-wrap">{{ faultCategoryLabel(record.faultCategory) }}</td>
               <td class="records-cell-wrap">{{ getRecordSubtypeTitle(record) }}</td>
               <td class="records-cell-wrap">
                 <span v-if="record.conclusion === 'Issue Detected'" class="badge badge-red">

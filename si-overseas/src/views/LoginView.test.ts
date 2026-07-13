@@ -81,7 +81,7 @@ describe('LoginView', () => {
     expect(router.currentRoute.value.fullPath).toBe('/chat');
   });
 
-  it('loads default dealer detect records after sign in', async () => {
+  it('loads default dealer detection records after sign in', async () => {
     const router = makeRouter();
     await router.push('/');
     await router.isReady();

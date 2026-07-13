@@ -151,12 +151,12 @@ describe('DetectFlowView', () => {
     expect(wrapper.find('.implant-upload-status').text()).toContain('2 photo(s) uploaded');
   });
 
-  it('renders a full telemetry review form for non-upload fault types', async () => {
+  it('renders a full sensor review form for non-upload fault types', async () => {
     const { wrapper } = await mountDetect('Sensor falling off');
 
     expect(wrapper.find('#page-detect-form').exists()).toBe(true);
     expect(wrapper.find('.detect-review-pack').exists()).toBe(true);
-    expect(wrapper.find('.detect-review-pack').text()).toContain('Telemetry review pack');
+    expect(wrapper.find('.detect-review-pack').text()).toContain('Sensor review pack');
     expect(wrapper.find('.detect-review-grid').text()).toContain('Device state');
     expect(wrapper.find('.detect-review-grid').text()).not.toContain('After-sales service card');
   });

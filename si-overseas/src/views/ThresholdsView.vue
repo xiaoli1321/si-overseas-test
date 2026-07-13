@@ -185,7 +185,7 @@ const groups = computed<ThresholdGroup[]>(() => [
     subtitle: 'Thresholds for comparison groups collected after 48 hours.',
     fields: [
       { key: 'after48hDeviationRangePct', label: 'Glucose deviation range (%)', hint: 'Allowed deviation range after the first 48 hours.', step: '1', min: 1, max: 100 },
-      { key: 'after48hWearDays', label: 'Wear days', hint: 'Use 0 when no wear-day gate is needed.', step: '1', min: 0, max: 30, integer: true },
+      { key: 'after48hWearDays', label: 'Wear days', hint: 'Enter 0 if there is no minimum wear-days threshold.', step: '1', min: 0, max: 30, integer: true },
     ],
   },
   {
@@ -195,8 +195,8 @@ const groups = computed<ThresholdGroup[]>(() => [
     title: 'Sensor Malfunction',
     subtitle: 'Thresholds for sensor malfunctions.',
     fields: [
-      { key: 'abnormalWearDays', label: 'Wear days', hint: 'Use 0 when no wear-day gate is needed.', step: '1', min: 0, max: 30, integer: true },
-      { key: 'temporaryAbnormalHours', label: 'Temporary abnormal duration (hours)', hint: 'Temporary abnormal status must last longer than this value before it qualifies.', step: '1', min: 1, max: 24, integer: true },
+      { key: 'abnormalWearDays', label: 'Wear days', hint: 'Enter 0 if there is no minimum wear-days threshold.', step: '1', min: 0, max: 30, integer: true },
+      { key: 'temporaryAbnormalHours', label: 'Temporary abnormal duration (hours)', hint: 'The temporary abnormal state must persist longer than this value to be considered valid.', step: '1', min: 1, max: 24, integer: true },
     ],
   },
   {
@@ -206,8 +206,8 @@ const groups = computed<ThresholdGroup[]>(() => [
     title: 'Sensor Falling Off',
     subtitle: 'Thresholds for detachment rules.',
     fields: [
-      { key: 'detachedStatusValue', label: 'Detachment status value', hint: 'Use 1 for detached and 0 for not detached.', step: '1', min: 0, max: 1, integer: true },
-      { key: 'detachmentWearDays', label: 'Wear days', hint: 'Use 0 when no wear-day gate is needed.', step: '1', min: 0, max: 30, integer: true },
+      { key: 'detachedStatusValue', label: 'Detachment status value', hint: 'Enter 1 for detached and 0 for not detached.', step: '1', min: 0, max: 1, integer: true },
+      { key: 'detachmentWearDays', label: 'Wear days', hint: 'Enter 0 if there is no minimum wear-days threshold.', step: '1', min: 0, max: 30, integer: true },
     ],
   },
   {
@@ -217,8 +217,8 @@ const groups = computed<ThresholdGroup[]>(() => [
     title: 'Application Failure',
     subtitle: 'Thresholds for application failure review.',
     fields: [
-      { key: 'applicationAfterSalesScore', label: 'After-sales score threshold', hint: 'Score at or above this value recommends after-sales.', step: '1', min: 1, max: 10, integer: true },
-      { key: 'applicationManualReviewScore', label: 'Manual review score threshold', hint: 'Score at or above this value but below the after-sales threshold recommends manual review.', step: '1', min: 1, max: 10, integer: true },
+      { key: 'applicationAfterSalesScore', label: 'After-sales score threshold', hint: 'After-sales service is recommended when the score reaches or exceeds this value.', step: '1', min: 1, max: 10, integer: true },
+      { key: 'applicationManualReviewScore', label: 'Manual review score threshold', hint: 'Manual review is recommended when the score reaches or exceeds this value but remains below the after-sales threshold.', step: '1', min: 1, max: 10, integer: true },
     ],
   },
 ]);
@@ -355,7 +355,7 @@ function validateField(field: ThresholdField) {
     return false;
   }
   if (value < field.min || value > field.max) {
-    errors[field.key] = `Enter a value from ${field.min} to ${field.max}.`;
+    errors[field.key] = `Please enter a value between ${field.min} and ${field.max}.`;
     return false;
   }
   delete errors[field.key];
@@ -415,7 +415,7 @@ async function confirmSave() {
   activeModal.value = {
     kind: 'success',
     title: 'Settings saved',
-    message: 'The updated values will be used for future detect runs.',
+    message: 'The updated values will be used for future detection runs.',
   };
 }
 
@@ -606,7 +606,7 @@ function getRestoredFromLabel(restoredFromVersion: number): string {
       <section v-if="!store.canManageThresholds.value" class="threshold-locked slide-up stagger-1">
         <h1>Threshold settings are managed by your dealer administrator.</h1>
         <p>
-          {{ store.currentAccount.value.organizationName }} can use the current dealer rule profile for detect,
+          {{ store.currentAccount.value.organizationName }} can use the current dealer rule profile for detection,
           but cannot edit after-sales thresholds.
         </p>
       </section>

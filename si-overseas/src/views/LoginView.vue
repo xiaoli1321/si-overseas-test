@@ -5,7 +5,7 @@ import { useDemoStore } from '@/composables/useDemoStore';
 
 const TYPEWRITER_SENTENCES = [
   'Device Detection for overseas CGM support.',
-  'Threshold governance without changing your workflow.',
+  'Manage thresholds without changing your workflow.',
   'Detection History stays intact across every review.',
 ] as const;
 
@@ -105,7 +105,7 @@ onBeforeUnmount(clearTypewriterTimer);
       <div class="login-shell-content">
         <section class="login-story">
           <div class="login-story-kicker">Device Detection platform</div>
-          <h1 class="login-display">SIBIONICS CGM AI servdesk</h1>
+          <h1 class="login-display">SIBIONICS CGM AI Service Desk</h1>
           <div class="login-copy text-type" aria-live="polite">
             <span class="text-type__content">
               {{ typedLoginCopy }}
@@ -120,15 +120,15 @@ onBeforeUnmount(clearTypewriterTimer);
           <div class="login-point-list">
             <div class="login-point">
               <strong>Device Detection</strong>
-              <span>If you already know the user's fault type, select a card to enter device selection. If you cannot determine it yet, describe the issue to AI and it will help identify the likely fault type.</span>
+              <span>If you know the issue type, select a card to choose your device. If you are unsure, describe the problem to AI, and it will help identify possible issues.</span>
             </div>
             <div class="login-point">
               <strong>Thresholds</strong>
-              <span>Thresholds are condition values set by local administrators for different fault types based on after-sales policy.</span>
+              <span>Thresholds are criteria values set by local administrators for different issue types according to after-sales service policies.</span>
             </div>
             <div class="login-point">
               <strong>Detection History</strong>
-              <span>Records preserve diagnostic evidence for after-sales review and track regional fault-type distribution so targeted improvement actions can be planned.</span>
+              <span>Records are saved as diagnostic evidence for after-sales review, and track the distribution of issue types across regions to support targeted improvement planning.</span>
             </div>
           </div>
           <div class="login-meta">Continuous Glucose Monitoring · Precision Diagnostics</div>
@@ -144,7 +144,7 @@ onBeforeUnmount(clearTypewriterTimer);
                 <div class="login-brand-text">
                   <div class="login-eyebrow">Authorized Access</div>
                   <div class="login-title">SIBIONICS</div>
-                  <div class="login-tagline">CGM AI servdesk</div>
+                  <div class="login-tagline">CGM AI Service Desk</div>
                 </div>
               </div>
               <p class="login-intro">Sign in to continue to fault detect, threshold governance, and detect-record review.</p>

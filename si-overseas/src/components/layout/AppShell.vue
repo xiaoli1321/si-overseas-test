@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import { keyForFaultCategory } from '@/composables/faultCategories';
+import { keyForFaultCategory, faultCategoryLabel } from '@/composables/faultCategories';
 import { useDemoStore } from '@/composables/useDemoStore';
 import { useAgentChat } from '@/composables/useAgentChat';
 import type { DetectSession } from '@/types/record';
@@ -311,7 +311,7 @@ onMounted(() => {
         <div class="logo">
           <img :src="logoImage" alt="SIBIONICS" class="logo-img" />
         </div>
-        <div class="topbar-tagline">CGM AI servdesk</div>
+        <div class="topbar-tagline">CGM AI Service Desk</div>
       </div>
       <button
         class="hamburger-btn"
@@ -402,28 +402,28 @@ onMounted(() => {
       <div class="drawer-header">
         <div>
           <h3 id="sessions-drawer-title">Session Manager</h3>
-          <p>Completed sessions keep their own threshold snapshot, so later rule edits do not rewrite history.</p>
+          <p>Each completed session retains a snapshot of its threshold settings. Any subsequent changes to the rules will not modify historical records.</p>
         </div>
         <button class="toolbar-icon-btn" type="button" aria-label="Close session drawer" @click="sessionsOpen = false">&times;</button>
       </div>
       <div class="drawer-body">
-        <p v-if="!sessionGroupCount">No active or completed detect sessions yet.</p>
+        <p v-if="!sessionGroupCount">No active or completed detection sessions yet.</p>
         <template v-else>
           <section v-if="processingSessions.length" class="drawer-card session-section">
             <h4>Processing</h4>
-            <p>Detect runs that are currently analyzing telemetry or evidence.</p>
+            <p>Detection runs that are currently analyzing sensor data or evidence.</p>
             <ul class="session-list">
               <li v-for="session in processingSessions" :key="session.id" class="session-item">
                 <div class="session-item-title">
-                  <strong :class="{ mono: !session.batchId }">{{ session.batchId ? session.faultCategory : session.sn }}</strong>
+                  <strong :class="{ mono: !session.batchId }">{{ session.batchId ? faultCategoryLabel(session.faultCategory) : session.sn }}</strong>
                   <span class="badge badge-blue">Processing</span>
                 </div>
                 <span v-if="session.batchId">{{ sessionDeviceCount(session) }} devices · {{ sessionCompletedCount(session) }}/{{ sessionDeviceCount(session) }} complete · updated {{ formatSessionTime(session.updatedAt) }}</span>
-                <span v-else>Single · {{ session.faultCategory }} · updated {{ formatSessionTime(session.updatedAt) }}</span>
+                <span v-else>Single · {{ faultCategoryLabel(session.faultCategory) }} · updated {{ formatSessionTime(session.updatedAt) }}</span>
                 <p v-if="session.stepLabel" class="session-progress-copy">{{ session.stepLabel }} · {{ session.progress ?? 0 }}%</p>
                 <div class="session-actions">
                   <button class="btn btn-primary btn-sm" type="button" data-test="session-view-progress" @click="openSession(session)">View progress</button>
-                  <button class="btn btn-secondary btn-sm" type="button" @click="router.push({ name: 'fault-query', params: { categoryKey: keyForFaultCategory(session.faultCategory) } })">New detect</button>
+                  <button class="btn btn-secondary btn-sm" type="button" @click="router.push({ name: 'fault-query', params: { categoryKey: keyForFaultCategory(session.faultCategory) } })">New detection</button>
                 </div>
               </li>
             </ul>
@@ -434,14 +434,14 @@ onMounted(() => {
             <ul class="session-list">
               <li v-for="session in completedSessions" :key="session.id" class="session-item">
                 <div class="session-item-title">
-                  <strong :class="{ mono: !session.batchId }">{{ session.batchId ? session.faultCategory : session.sn }}</strong>
+                  <strong :class="{ mono: !session.batchId }">{{ session.batchId ? faultCategoryLabel(session.faultCategory) : session.sn }}</strong>
                   <span class="badge badge-green">Complete</span>
                 </div>
                 <span v-if="session.batchId">{{ sessionRecordCount(session) }} records · updated {{ formatSessionTime(session.updatedAt) }}</span>
-                <span v-else>{{ session.faultCategory }} · updated {{ formatSessionTime(session.updatedAt) }}</span>
+                <span v-else>{{ faultCategoryLabel(session.faultCategory) }} · updated {{ formatSessionTime(session.updatedAt) }}</span>
                 <div class="session-actions">
                   <button class="btn btn-primary btn-sm" type="button" data-test="session-view-result" @click="openSession(session)">View result</button>
-                  <button class="btn btn-secondary btn-sm" type="button" @click="router.push({ name: 'fault-query', params: { categoryKey: keyForFaultCategory(session.faultCategory) } })">New detect</button>
+                  <button class="btn btn-secondary btn-sm" type="button" @click="router.push({ name: 'fault-query', params: { categoryKey: keyForFaultCategory(session.faultCategory) } })">New detection</button>
                 </div>
               </li>
             </ul>

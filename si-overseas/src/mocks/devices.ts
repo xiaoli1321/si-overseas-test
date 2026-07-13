@@ -153,7 +153,7 @@ export const MOCK_DEVICES: Device[] = [
       faultCategory: 'Sensor falling off',
       faultSubtype: 'Fall-out detected',
       expectedAfterSales: 'Replacement Eligible',
-      notes: 'Telemetry and abnormal status match the fall-out replacement path.',
+      notes: 'Sensor data and abnormal status match the fall-out replacement path.',
     },
   },
   {
