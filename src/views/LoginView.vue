@@ -122,15 +122,15 @@ onBeforeUnmount(clearTypewriterTimer);
           <div class="login-point-list">
             <div class="login-point">
               <strong>Device detection</strong>
-              <span>If you already know the user's fault type, select a card to enter device selection. If you cannot determine it yet, describe the issue to AI and it will help identify the likely fault type.</span>
+              <span>If you know the issue type, select a card to choose your device. If you are unsure, describe the problem to AI, and it will help identify possible issues.</span>
             </div>
             <div class="login-point">
               <strong>Thresholds</strong>
-              <span>Thresholds are condition values set by local administrators for different fault types based on after-sales policy.</span>
+              <span>Thresholds are criteria values set by local administrators for different issue types according to after-sales service policies.</span>
             </div>
             <div class="login-point">
               <strong>Detection records</strong>
-              <span>Records preserve diagnostic evidence for after-sales review and track regional fault-type distribution so targeted improvement actions can be planned.</span>
+              <span>Records are saved as diagnostic evidence for after-sales review, and track the distribution of issue types across regions to support targeted improvement planning.</span>
             </div>
           </div>
           <div class="login-meta">Continuous Glucose Monitoring · Precision Diagnostics</div>

@@ -115,7 +115,7 @@ describe('FaultQueryView', () => {
     expect(selected).toContain('P2251212813RVK19');
     expect(wrapper.findAll('[data-test="selected-device-row"]')).toHaveLength(2);
     expect(wrapper.find('[data-test="pending-lines"]').text()).toContain('P22512128 matches');
-    expect(wrapper.find('[data-test="pending-lines"]').text()).toContain('NO-SUCH-SN was not found');
+    expect(wrapper.find('[data-test="pending-lines"]').text()).toContain('NO-SUCH-SN not found');
   });
 
   it('removes selected devices and disables running when none remain', async () => {

@@ -21,7 +21,7 @@ export const FAULT_CATEGORY_META: FaultCategoryMeta[] = [
     category: 'Data accuracy',
     key: 'data-accuracy',
     title: 'Data accuracy',
-    shortCopy: 'Glucose readings differ from BGM, stay flat or low, or show sudden jumps.',
+    shortCopy: 'Glucose readings do not match fingerstick blood glucose (BGM), remain consistently flat or low, or show sudden fluctuations.',
     queryCopy: 'The user reports glucose readings that differ from BGM — including flat-line traces, persistent lows, or sudden jumps.',
     tags: [
       { label: 'Differences from BGM', kind: 'check' },
@@ -56,8 +56,8 @@ export const FAULT_CATEGORY_META: FaultCategoryMeta[] = [
     category: 'Application failure',
     key: 'application-failure',
     title: 'Application failure',
-    shortCopy: 'Device malfunction may result from assembly failure or failure to wear the equipment correctly.',
-    queryCopy: 'Device malfunction may result from assembly failure or failure to wear the equipment correctly.',
+    shortCopy: 'The device malfunction may result from an assembly failure or improper sensor application.',
+    queryCopy: 'The device malfunction may result from an assembly failure or improper sensor application.',
     tags: [
       { label: 'Assembly failed', kind: 'check' },
       { label: 'Guiding needle retention', kind: 'check' },

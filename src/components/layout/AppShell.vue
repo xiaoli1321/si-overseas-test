@@ -233,7 +233,7 @@ function formatSessionTime(value: string) {
         <button class="toolbar-icon-btn" type="button" aria-label="Close help drawer" @click="helpOpen = false">&times;</button>
       </div>
       <div class="drawer-body">
-        <p>Use SN search first. Results, dashboard cards, and detection records are generated only after you run a detection.</p>
+        <p>Please search by SN first. Results, dashboard cards, and detection records are only generated after a detection is run.</p>
       </div>
     </section>
   </div>
@@ -243,7 +243,7 @@ function formatSessionTime(value: string) {
       <div class="drawer-header">
         <div>
           <h3 id="sessions-drawer-title">Session Manager</h3>
-          <p>Completed sessions keep their own threshold snapshot, so later rule edits do not rewrite history.</p>
+          <p>Each completed session retains a snapshot of its threshold settings. Any subsequent changes to the rules will not modify historical records.</p>
         </div>
         <button class="toolbar-icon-btn" type="button" aria-label="Close session drawer" @click="sessionsOpen = false">&times;</button>
       </div>

@@ -198,7 +198,7 @@ onMounted(() => {
           <textarea
             v-model="draft"
             aria-label="Describe the case"
-            placeholder="Describe your device issue. I'll help identify the likely fault."
+            placeholder="Describe your device issue, and I'll help identify the possible cause."
             rows="2"
             :disabled="isResponding"
           ></textarea>

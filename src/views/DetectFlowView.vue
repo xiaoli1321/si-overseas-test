@@ -243,7 +243,7 @@ const recommendationCopy = computed(() => {
 const heroSummary = computed(() => {
   if (!latestRecord.value) return '';
   if (categoryKey.value === 'inaccuracy') {
-    if (!isFault.value) return 'Cannot directly enter after-sales based on the first-round curve result. Continue with the CGM/BGM image comparison step.';
+    if (!isFault.value) return 'The initial curve analysis results alone cannot determine after-sales eligibility. Please proceed with the CGM/BGM image comparison process.';
     if (latestRecord.value.faultSubtype.includes('Persistent Low')) return 'The recent glucose curve shows a persistent-low pattern. See Basis for the Verdict below for the rule details.';
     if (latestRecord.value.faultSubtype.includes('No Fluctuation')) return 'The recent glucose curve stays unusually flat for a sustained period. See Basis for the Verdict below for the rule details.';
     return 'The recent glucose curve shows repeated jump points within the screening window.';
@@ -251,14 +251,14 @@ const heroSummary = computed(() => {
   if (categoryKey.value === 'detachment') {
     return isFault.value
       ? 'The record shows a sensor fall-out pattern and the device is already in an abnormal state.'
-      : 'The current record does not show a confirmed sensor fall-out pattern.';
+      : 'No confirmed sensor fall-out pattern has been identified in the current record.';
   }
   if (categoryKey.value === 'sensor') {
-    if (!isFault.value) return 'No abnormal sensor status is currently detected on this device, so after-sales support is not available.';
-    if (latestRecord.value.faultSubtype.includes('Initialization')) return 'The device shows an abnormality during the initialization stage.';
-    if (latestRecord.value.faultSubtype.includes('Temporary')) return 'Temporary sensor abnormality. Check again in 3 hours to see whether the device returns to normal.';
+    if (!isFault.value) return 'No abnormal sensor status has been detected on this device; therefore, after-sales support cannot be provided.';
+    if (latestRecord.value.faultSubtype.includes('Initialization')) return 'The device became abnormal during the initialization phase.';
+    if (latestRecord.value.faultSubtype.includes('Temporary')) return 'Temporary sensor abnormality detected. Please check again after 3 hours to confirm whether the device has returned to normal.';
     if (latestRecord.value.faultSubtype.includes('Probe')) return 'The current sensor has failed and cannot be reactivated.';
-    return 'An abnormal sensor status has been detected outside initialization.';
+    return 'An abnormal sensor status was detected outside the initialization phase.';
   }
   return isFault.value
     ? 'The uploaded photos match an application-failure pattern.'
@@ -266,12 +266,12 @@ const heroSummary = computed(() => {
 });
 const historyLookback = computed(() => {
   if (!latestRecord.value) return '';
-  if (categoryKey.value === 'detachment' || categoryKey.value === 'implant') return 'History lookback: Not applicable.';
-  if (categoryKey.value === 'sensor') return 'History lookback: no prior sensor abnormality record.';
-  if (latestRecord.value.faultSubtype.includes('Persistent Low')) return 'History lookback: no prior persistent low record.';
-  if (latestRecord.value.faultSubtype.includes('No Fluctuation')) return 'History lookback: no prior no-fluctuation record.';
-  if (latestRecord.value.faultSubtype.includes('Jump')) return 'History lookback: no prior jump-point record.';
-  return 'History lookback: Not applicable.';
+  if (categoryKey.value === 'detachment' || categoryKey.value === 'implant') return 'Historical review: Not applicable.';
+  if (categoryKey.value === 'sensor') return 'Historical review: No previous sensor abnormality records found.';
+  if (latestRecord.value.faultSubtype.includes('Persistent Low')) return 'Historical review: No previous persistent-low records found.';
+  if (latestRecord.value.faultSubtype.includes('No Fluctuation')) return 'Historical review: No previous no-fluctuation records found.';
+  if (latestRecord.value.faultSubtype.includes('Jump')) return 'Historical review: No previous jump-point records found.';
+  return 'Historical review: Not applicable.';
 });
 const reasonRows = computed(() => {
   if (!latestRecord.value) return [];
@@ -735,7 +735,7 @@ function submitInaccuracyDeviation() {
           </div>
           <div class="processing-right">
             <h2>Analyzing device data</h2>
-            <p id="processing-subtitle">Processing sensor data, rule packs, and optional vision checks for a full verdict.</p>
+            <p id="processing-subtitle">Streaming sensor data, rule packages, and optional visual inspections to generate a complete verdict.</p>
             <div id="processing-steps" class="processing-steps">
               <div v-for="(step, index) in processingSteps" :key="step" class="proc-step" :class="{ done: processingComplete || index < processingStep, active: !processingComplete && index === processingStep }">
                 <div class="proc-step-icon">{{ processingComplete || index < processingStep ? 'Done' : index === processingStep ? 'Now' : 'Next' }}</div>

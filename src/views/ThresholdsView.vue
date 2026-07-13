@@ -114,8 +114,8 @@ const groups: ThresholdGroup[] = [
     title: 'Data accuracy / Jump Points',
     subtitle: 'Thresholds for adjacent glucose jumps.',
     fields: [
-      { key: 'jumpDeltaMmol', label: 'Glucose jump value (mmol/L)', hint: 'Adjacent readings above this difference count as jump points.', step: '0.1', min: 0.1, max: 20 },
-      { key: 'jumpConsecutive', label: 'Occurrence count', hint: 'Consecutive jump points needed before the condition is met.', step: '1', min: 1, max: 10, integer: true },
+      { key: 'jumpDeltaMmol', label: 'Glucose jump value (mmol/L)', hint: 'A value exceeding this threshold between two consecutive readings is counted as a jump point.', step: '0.1', min: 0.1, max: 20 },
+      { key: 'jumpConsecutive', label: 'Occurrence count', hint: 'The number of consecutive jump points required to meet the criteria.', step: '1', min: 1, max: 10, integer: true },
     ],
   },
   {
@@ -140,7 +140,7 @@ const groups: ThresholdGroup[] = [
       { key: 'after48hDeviationRangePct', label: 'Glucose deviation range (%)', hint: 'Allowed deviation range after the first 48 hours.', step: '1', min: 1, max: 100 },
       { key: 'after48hPairCount', label: 'Glucose comparison group count', hint: 'Number of comparison groups required after 48 hours.', step: '1', min: 1, max: 10, integer: true },
       { key: 'after48hQualifiedPairCount', label: 'Qualified comparison group count', hint: 'Number of comparison groups that must meet the deviation rule.', step: '1', min: 1, max: 10, integer: true },
-      { key: 'after48hWearDays', label: 'Wear days', hint: 'Use 0 when no wear-day gate is needed.', step: '1', min: 0, max: 30, integer: true },
+      { key: 'after48hWearDays', label: 'Wear days', hint: 'Enter 0 if there is no minimum wear-days threshold.', step: '1', min: 0, max: 30, integer: true },
     ],
   },
   {
@@ -150,8 +150,8 @@ const groups: ThresholdGroup[] = [
     title: 'Sensor Malfunction',
     subtitle: 'Thresholds for sensor malfunction.',
     fields: [
-      { key: 'abnormalWearDays', label: 'Wear days', hint: 'Use 0 when no wear-day gate is needed.', step: '1', min: 0, max: 30, integer: true },
-      { key: 'temporaryAbnormalHours', label: 'Temporary abnormal duration (hours)', hint: 'Temporary abnormal status must last longer than this value before it qualifies.', step: '1', min: 1, max: 24, integer: true },
+      { key: 'abnormalWearDays', label: 'Wear days', hint: 'Enter 0 if there is no minimum wear-days threshold.', step: '1', min: 0, max: 30, integer: true },
+      { key: 'temporaryAbnormalHours', label: 'Temporary abnormal duration (hours)', hint: 'The temporary abnormal state must persist longer than this value to be considered valid.', step: '1', min: 1, max: 24, integer: true },
     ],
   },
   {
@@ -161,8 +161,8 @@ const groups: ThresholdGroup[] = [
     title: 'Sensor Falling Off',
     subtitle: 'Thresholds for detachment rules.',
     fields: [
-      { key: 'detachedStatusValue', label: 'Detachment status value', hint: 'Use 1 for detached and 0 for not detached.', step: '1', min: 0, max: 1, integer: true },
-      { key: 'detachmentWearDays', label: 'Wear days', hint: 'Use 0 when no wear-day gate is needed.', step: '1', min: 0, max: 30, integer: true },
+      { key: 'detachedStatusValue', label: 'Detachment status value', hint: 'Enter 1 for detached and 0 for not detached.', step: '1', min: 0, max: 1, integer: true },
+      { key: 'detachmentWearDays', label: 'Wear days', hint: 'Enter 0 if there is no minimum wear-days threshold.', step: '1', min: 0, max: 30, integer: true },
     ],
   },
   {
@@ -173,8 +173,8 @@ const groups: ThresholdGroup[] = [
     subtitle: 'Thresholds for application failure review.',
     fields: [
       { key: 'applicationPhotoCount', label: 'Device photo count', hint: 'Number of device photos required for review.', step: '1', min: 2, max: 10, integer: true },
-      { key: 'applicationAfterSalesScore', label: 'After-sales score threshold', hint: 'Score at or above this value recommends after-sales.', step: '1', min: 1, max: 10, integer: true },
-      { key: 'applicationManualReviewScore', label: 'Manual review score threshold', hint: 'Score at or above this value but below the after-sales threshold recommends manual review.', step: '1', min: 1, max: 10, integer: true },
+      { key: 'applicationAfterSalesScore', label: 'After-sales score threshold', hint: 'After-sales service is recommended when the score reaches or exceeds this value.', step: '1', min: 1, max: 10, integer: true },
+      { key: 'applicationManualReviewScore', label: 'Manual review score threshold', hint: 'Manual review is recommended when the score reaches or exceeds this value but remains below the after-sales threshold.', step: '1', min: 1, max: 10, integer: true },
     ],
   },
 ];
@@ -284,7 +284,7 @@ function validateField(field: ThresholdField) {
     return false;
   }
   if (value < field.min || value > field.max) {
-    errors[field.key] = `Enter a value from ${field.min} to ${field.max}.`;
+    errors[field.key] = `Please enter a value between ${field.min} and ${field.max}.`;
     return false;
   }
   delete errors[field.key];
@@ -300,11 +300,11 @@ function validateAll() {
   }
 
   if (form.within48hQualifiedPairCount > form.within48hPairCount) {
-    errors.within48hQualifiedPairCount = 'Qualified groups cannot exceed comparison groups.';
+    errors.within48hQualifiedPairCount = 'The number of qualified groups cannot exceed the number of comparison groups.';
     invalid.push('within48hQualifiedPairCount');
   }
   if (form.after48hQualifiedPairCount > form.after48hPairCount) {
-    errors.after48hQualifiedPairCount = 'Qualified groups cannot exceed comparison groups.';
+    errors.after48hQualifiedPairCount = 'The number of qualified groups cannot exceed the number of comparison groups.';
     invalid.push('after48hQualifiedPairCount');
   }
   if (form.applicationManualReviewScore > form.applicationAfterSalesScore) {

@@ -88,7 +88,7 @@ function resolveLine(line: string, index: number, autoAddUniqueFuzzy: boolean) {
 
   const matches = store.searchDeviceMatches(line);
   if (!matches.length) {
-    pendingLines.value.push({ line, message: `Line ${index + 1}: ${line} was not found.` });
+    pendingLines.value.push({ line, message: `Line ${index + 1}: ${line} not found.` });
     return;
   }
 
@@ -102,7 +102,7 @@ function resolveLine(line: string, index: number, autoAddUniqueFuzzy: boolean) {
     return;
   }
 
-  pendingLines.value.push({ line, message: `Line ${index + 1}: ${line} matches ${matches.length} devices. Select the intended SN below.` });
+  pendingLines.value.push({ line, message: `Line ${index + 1}: ${line} matched ${matches.length} devices. Please select the target SN below.` });
   candidates.value = matches;
 }
 
@@ -267,7 +267,7 @@ onBeforeUnmount(clearTimers);
           </div>
 
           <p class="fault-query-rail-note">
-            Add one or more devices. Every selected device will be checked against this same fault type.
+            Add one or more devices. Each selected device will be checked for the same issue type.
           </p>
         </aside>
 
@@ -287,7 +287,7 @@ onBeforeUnmount(clearTimers);
           <form class="fault-query-command fault-query-shell" @submit.prevent="search">
             <label class="fault-query-command-label" for="fault-sn-input">
               <span>Serial number</span>
-              <span>Paste a full SN, an SN fragment, or multiple lines. Unique matches are added to the selected devices list.</span>
+              <span>Paste a complete SN, SN segment, or multiple lines. Unique matches will be added to the selected device list.</span>
             </label>
             <div class="fault-query-command-row">
               <textarea
@@ -352,7 +352,7 @@ onBeforeUnmount(clearTimers);
             <div class="selected-devices-head">
               <div>
                 <p class="fault-query-kicker">Run status</p>
-                <h3>{{ batchComplete ? 'Multi-device results complete' : 'Running selected devices' }}</h3>
+                <h3>{{ batchComplete ? 'All results for multiple devices have been completed.' : 'Running the selected devices' }}</h3>
               </div>
               <button class="btn btn-secondary btn-sm" type="button" :disabled="!batchComplete" @click="openRecords">Open detection records</button>
             </div>
@@ -376,7 +376,7 @@ onBeforeUnmount(clearTimers);
           <section v-if="candidates.length" class="fault-query-results">
             <div class="fault-query-results-head">
               <h3>Matching candidates</h3>
-              <p>Select the intended device to add it to <strong>{{ meta.title }}</strong>.</p>
+              <p>Select the target device and add it to <strong>{{ meta.title }}</strong>.</p>
             </div>
             <div class="fault-query-device-list">
               <DeviceCard

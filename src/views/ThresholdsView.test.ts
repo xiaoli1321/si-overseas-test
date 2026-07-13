@@ -52,7 +52,7 @@ describe('ThresholdsView', () => {
 
     expect(wrapper.find('.modal-overlay').exists()).toBe(false);
     expect(wrapper.find('#threshold-lowMinHours').classes()).toContain('is-invalid');
-    expect(wrapper.find('.field-message.is-error').text()).toContain('Enter a value from 1 to 24.');
+    expect(wrapper.find('.field-message.is-error').text()).toContain('Please enter a value between 1 and 24.');
   });
 
 });

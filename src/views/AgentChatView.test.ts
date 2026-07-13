@@ -52,7 +52,7 @@ describe('AgentChatView', () => {
     expect(wrapper.findAll('[data-test="fault-entry-card"]')[0].text()).toContain('Jump and down data.');
     expect(wrapper.findAll('[data-test="fault-entry-card"]')[0].text()).toContain('Glucose data in a straight line');
     expect(wrapper.find('textarea[aria-label="Describe the case"]').attributes('placeholder')).toBe(
-      "Describe your device issue. I'll help identify the likely fault.",
+      "Describe your device issue, and I'll help identify the possible cause.",
     );
     expect(wrapper.find('input[aria-label="Upload fault images"]').exists()).toBe(false);
     expect(wrapper.find('.image-upload-btn').exists()).toBe(false);

@@ -246,7 +246,7 @@ function exportCsv() {
         <div>
           <h1>Detection records</h1>
           <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 6px; max-width: 560px">
-            Immutable detection-record history: <strong>click any row</strong> to open the same verdict screen with result summary, reason card, device overview, optional supporting materials, and guidance. Filter, paginate, or export for QA.
+            Immutable detection-record history: <strong>click any row</strong> to open the same verdict screen, including the result summary, reason cards, device overview, optional supporting materials, and guidance. Records can be filtered, paginated, or exported for QA.
           </p>
         </div>
         <button class="btn btn-primary" type="button" data-test="records-export-csv" @click="exportCsv">&#8681; Export CSV</button>
@@ -394,7 +394,7 @@ function exportCsv() {
           <tbody>
             <tr v-if="!store.visibleRecords.value.length">
               <td colspan="9">
-                <div class="empty-state" style="padding: 28px">No detection records yet. Run a detection from Device detection to populate this log.</div>
+                <div class="empty-state" style="padding: 28px">No detection records available. Please run a detection from the Device detection page to populate this log.</div>
               </td>
             </tr>
             <tr v-else-if="!pageSlice.length">
