@@ -140,12 +140,12 @@ export const CHAT_AGENT_SCRIPTS = {
   offFour:
     "Our AI agent could not determine the fault type for now. Please assess it manually.",
   unrelated:
-    'Sorry, the issue you described doesn't appear to be CGM-related. Please rephrase it, or ask about a CGM-related problem.',
+    "Sorry, the issue you described doesn't appear to be CGM-related. Please rephrase it, or ask about a CGM-related problem.",
 } as const;
 
 export const CHAT_SCRIPT_BRACKET: Record<FaultCategory, string> = {
   'Data accuracy': '[data accuracy]',
-  'Application failure': '[implantation failure]',
+  'Application failure': '[Application failure]',
   'Sensor Abnormal': '[Sensor Malfunction]',
   'Sensor falling off': '[detachment]',
 };
