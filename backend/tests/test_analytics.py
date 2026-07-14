@@ -56,6 +56,16 @@ def test_pydantic_schema_validation_success():
         status="success"
     )
     assert props.status == "success"
+    assert props.channel == "web"
+
+    openapi_props = LoginEventProperties(
+        user_id=1,
+        username="partner@test.com",
+        role="dealer",
+        status="success",
+        channel="openapi",
+    )
+    assert openapi_props.channel == "openapi"
 
     # Device query validation
     props_query = DeviceQueryEventProperties(

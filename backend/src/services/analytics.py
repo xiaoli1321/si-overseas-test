@@ -12,13 +12,14 @@ from src.schemas.analytics import (
 )
 
 
-def _get_user_context(user: User) -> dict:
+def _get_user_context(user: User, *, channel: str = "web") -> dict:
     return {
         "user_id": user.id,
         "username": user.username,
         "role": user.role,
         "distributor_id": user.distributor_id,
         "distributor_name": user.distributor_name,
+        "channel": channel,
     }
 
 
@@ -28,8 +29,9 @@ async def track_login(
     user: User,
     status: Literal["success", "failure"],
     fail_reason: Literal["invalid_password", "user_not_found"] | None = None,
+    channel: Literal["web", "openapi"] = "web",
 ) -> None:
-    context = _get_user_context(user)
+    context = _get_user_context(user, channel=channel)
     properties = LoginEventProperties(
         **context,
         status=status,
@@ -80,7 +82,7 @@ async def track_diagnosis_completed(
     judgment_source: Literal["AI (VLM)", "Rule Engine"],
     has_images: bool,
 ) -> None:
-    context = _get_user_context(user)
+    context = _get_user_context(user, channel=record.source)
     properties = DiagnosisCompletedEventProperties(
         **context,
         record_id=record.id,
@@ -110,7 +112,7 @@ async def track_verdict_adoption(
     feedback_status: Literal["adopted", "rejected"],
     reject_reason: str | None = None,
 ) -> None:
-    context = _get_user_context(user)
+    context = _get_user_context(user, channel=record.source)
     properties = VerdictAdoptionEventProperties(
         **context,
         record_id=record.id,

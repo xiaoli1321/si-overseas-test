@@ -105,7 +105,7 @@ onBeforeUnmount(clearTypewriterTimer);
       <div class="login-shell-content">
         <section class="login-story">
           <div class="login-story-kicker">Device Detection platform</div>
-          <h1 class="login-display">SIBIONICS CGM AI Service Desk</h1>
+          <h1 class="login-display">SIBIONICS CGM AI SERVICE DESK</h1>
           <div class="login-copy text-type" aria-live="polite">
             <span class="text-type__content">
               {{ typedLoginCopy }}
@@ -144,7 +144,7 @@ onBeforeUnmount(clearTypewriterTimer);
                 <div class="login-brand-text">
                   <div class="login-eyebrow">Authorized Access</div>
                   <div class="login-title">SIBIONICS</div>
-                  <div class="login-tagline">CGM AI Service Desk</div>
+                  <div class="login-tagline">CGM AI SERVICE DESK</div>
                 </div>
               </div>
               <p class="login-intro">Sign in to continue to fault detect, threshold governance, and detect-record review.</p>

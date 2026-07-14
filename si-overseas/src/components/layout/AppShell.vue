@@ -311,7 +311,7 @@ onMounted(() => {
         <div class="logo">
           <img :src="logoImage" alt="SIBIONICS" class="logo-img" />
         </div>
-        <div class="topbar-tagline">CGM AI Service Desk</div>
+        <div class="topbar-tagline">CGM AI SERVICE DESK</div>
       </div>
       <button
         class="hamburger-btn"

@@ -9,20 +9,30 @@ from src.services.analytics import track_login
 from src.services.audit import record_audit_event
 
 
-async def login(db: AsyncSession, email: str, password: str) -> tuple[str, User]:
+async def login(
+    db: AsyncSession,
+    email: str,
+    password: str,
+    *,
+    channel: str = "web",
+) -> tuple[str, User]:
     user = await get_user_by_email(db, email)
     if user is None:
         raise UnauthorizedError("Invalid email or password.")
     if not verify_password(password, user.password):
         await track_login(
-            db, user=user, status="failure", fail_reason="invalid_password"
+            db,
+            user=user,
+            status="failure",
+            fail_reason="invalid_password",
+            channel=channel,
         )
         await db.commit()
         raise UnauthorizedError("Invalid email or password.")
     token = create_access_token(
         str(user.id), {"email": user.username, "role": user.role}
     )
-    await track_login(db, user=user, status="success")
+    await track_login(db, user=user, status="success", channel=channel)
     await db.commit()
     return token, user
 

@@ -33,6 +33,7 @@ async def create_all() -> None:
         ChatMessage,
         ChatSession,
         DetectRecord,
+        OpenApiIdempotencyKey,
         Threshold,
         UploadedFile,
         User,

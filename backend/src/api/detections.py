@@ -88,7 +88,7 @@ async def detail_endpoint(
     """
     查询单条设备诊断记录详情接口。
     """
-    record = await get_record(db, user.id, record_id)
+    record = await get_record(db, user.id, record_id, source="web")
     if record is None:
         raise NotFoundError("Detect record was not found.")
     return ok(record_to_frontend(record, user))

@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 from src.rules.engine import run_rules
-from src.rules.thresholds import default_thresholds
+from src.rules.thresholds import default_thresholds, to_rule_config
 
 
 def _series(values: list[float]) -> dict:
@@ -29,6 +29,31 @@ def _series_from(start: datetime, values: list[float], *, minutes: int = 30, tim
             for index, value in enumerate(values)
         ],
     }
+
+
+def test_system_managed_evidence_counts_override_legacy_thresholds() -> None:
+    legacy = {
+        "data_accuracy": {
+            "data_deviation": {
+                "min_pairs": 5,
+                "within48hPairCount": 5,
+                "within48hQualifiedPairCount": 4,
+                "after48hPairCount": 6,
+                "after48hQualifiedPairCount": 3,
+            }
+        },
+        "application_failure": {"min_images": 9},
+    }
+
+    normalized = to_rule_config(legacy)
+
+    deviation = normalized["data_accuracy"]["data_deviation"]
+    assert deviation["min_pairs"] == 2
+    assert deviation["within48hPairCount"] == 2
+    assert deviation["within48hQualifiedPairCount"] == 2
+    assert deviation["after48hPairCount"] == 2
+    assert deviation["after48hQualifiedPairCount"] == 2
+    assert normalized["application_failure"]["min_images"] == 2
 
 
 def test_data_accuracy_should_match_persistently_low() -> None:
@@ -602,11 +627,12 @@ def test_application_failure_multiturn_ignores_external_score() -> None:
 
 def test_data_accuracy_within_48h_custom_deviation() -> None:
     # Within 48h (wear_days < after48hWearDays)
-    # custom thresholds: deviation 6.0 mmol/L, pair_count 3, qualified_count 2
+    # custom thresholds: deviation 6.0 mmol/L; the paired-evidence count is
+    # system-managed at two pairs.
     tc = default_thresholds()
     tc["rules"]["inaccuracy"]["deviation"] = {
         "within48hDeviationMmol": 6.0,
-        "within48hPairCount": 3,
+        "within48hPairCount": 2,
         "within48hQualifiedPairCount": 2,
         "after48hDeviationRangePct": 20.0,
         "after48hPairCount": 2,
@@ -619,7 +645,7 @@ def test_data_accuracy_within_48h_custom_deviation() -> None:
         "wear_days": 1.0,  # Within 48h (1.0 < 2)
     }
 
-    # Case A: 3 pairs, 2 are qualified (deviating >= 6.0 mmol/L)
+    # Case A: 2 pairs, both are qualified (deviating >= 6.0 mmol/L)
     # Pair 1: CGM 10.0, BGM 3.0 (diff 7.0 >= 6.0) -> qualified
     # Pair 2: CGM 9.0, BGM 2.5 (diff 6.5 >= 6.0) -> qualified
     # Pair 3: CGM 5.0, BGM 4.8 (diff 0.2 < 6.0) -> not qualified
@@ -629,8 +655,6 @@ def test_data_accuracy_within_48h_custom_deviation() -> None:
             {"value": 3.0, "device_type": "BGM", "unit": "mmol/L", "is_valid": True, "is_reproduced": False},
             {"value": 9.0, "device_type": "CGM", "unit": "mmol/L", "is_valid": True, "is_reproduced": False},
             {"value": 2.5, "device_type": "BGM", "unit": "mmol/L", "is_valid": True, "is_reproduced": False},
-            {"value": 5.0, "device_type": "CGM", "unit": "mmol/L", "is_valid": True, "is_reproduced": False},
-            {"value": 4.8, "device_type": "BGM", "unit": "mmol/L", "is_valid": True, "is_reproduced": False},
         ]
     }
 
@@ -640,12 +664,12 @@ def test_data_accuracy_within_48h_custom_deviation() -> None:
         glucose_series=_series([5.6]),
         alarm={},
         threshold_config=tc,
-        file_ids=["f1", "f2", "f3", "f4", "f5", "f6"],
+        file_ids=["f1", "f2", "f3", "f4"],
         vision_analysis=vision_data
     )
     assert result.verdict == "Replacement Eligible"
     assert result.fault_subtype == "Data Deviation Detected"
-    assert "2 of 3 groups of CGM/BGM comparison readings confirm" in result.reasons[0]
+    assert "2 of 2 groups of CGM/BGM comparison readings confirm" in result.reasons[0]
 
 
 def test_data_accuracy_after_48h_custom_deviation() -> None:

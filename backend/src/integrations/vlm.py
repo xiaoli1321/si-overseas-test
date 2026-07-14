@@ -17,6 +17,10 @@ from src.core.logging import current_millis, log_context
 logger = logging.getLogger(__name__)
 
 
+class VlmRequestError(RuntimeError):
+    """A live VLM request exhausted retries and produced no trustworthy result."""
+
+
 class GlucoseReading(BaseModel):
     value: float | None = None
     device_type: str | None = None  # "CGM" or "BGM"
@@ -443,20 +447,21 @@ class QwenVlClient:
                     ),
                 )
 
-        fallback = fallback_glucose_analysis(
-            image_refs, model_name=self.settings.vlm_model
-        )
-        fallback.source = f"fallback_after_error:{type(last_error).__name__ if last_error else 'unknown'}"
         logger.error(
-            "Glucose reading VLM fallback used after live errors",
+            "Glucose reading VLM failed after retries",
             extra=log_context(
-                "vlm.fallback_used",
+                "vlm.glucose_failed",
                 duration_ms=current_millis(started),
                 image_count=len(image_refs),
-                source=fallback.source,
+                error_type=type(last_error).__name__ if last_error else "unknown",
+                error_message=str(last_error) if last_error else "",
             ),
         )
-        return fallback
+        detail = str(last_error) if last_error else "unknown VLM failure"
+        raise VlmRequestError(
+            f"Live glucose VLM request failed after {max(1, self.settings.vlm_max_retries)} attempt(s): "
+            f"{type(last_error).__name__ if last_error else 'UnknownError'}: {detail or 'no details returned'}"
+        ) from last_error
 
     def _call_live_glucose_model(self, image_refs: list[str]) -> VlmAnalysisResult:
         from openai import OpenAI
@@ -469,7 +474,12 @@ class QwenVlClient:
         )
 
         client = OpenAI(
-            api_key=self.settings.dashscope_api_key, base_url=self.settings.vlm_base_url
+            api_key=self.settings.dashscope_api_key,
+            base_url=self.settings.vlm_base_url,
+            timeout=self.settings.vlm_request_timeout_seconds,
+            # Retry in analyze_glucose_readings so each attempt and the final
+            # error are observable; do not hide a long SDK retry loop here.
+            max_retries=0,
         )
         content: list[dict[str, Any]] = [
             {"type": "text", "text": self.settings.vlm_system_prompt_glucose}

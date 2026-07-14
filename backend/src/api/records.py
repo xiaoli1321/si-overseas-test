@@ -78,6 +78,7 @@ async def list_endpoint(
     records, total = await list_records(
         db,
         user.id,
+        source="web",
         fault_category=fault_category,
         verdict=verdict,
         serial_no=serial_no,
@@ -109,7 +110,7 @@ async def stats_endpoint(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
-    data = stats_to_frontend(await stats(db, user.id))
+    data = stats_to_frontend(await stats(db, user.id, source="web"))
     logger.info(
         "Detection record stats loaded",
         extra=log_context("records.stats_loaded", user_id=user.id),
@@ -153,6 +154,7 @@ async def export_endpoint(
     async for records in iter_records_for_export(
         db,
         user.id,
+        source="web",
         fault_category=fault_category,
         verdict=verdict,
         serial_no=serial_no,
@@ -260,7 +262,7 @@ async def detail_endpoint(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
-    record = await get_record(db, user.id, record_id)
+    record = await get_record(db, user.id, record_id, source="web")
     if record is None:
         raise NotFoundError("Detect record was not found.")
     logger.info(

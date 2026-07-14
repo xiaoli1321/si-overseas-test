@@ -1,0 +1,942 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Overseas CGM Agent Backend MVP",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/openapi/v1/auth/login": {
+      "post": {
+        "tags": [
+          "openapi"
+        ],
+        "summary": "Login Endpoint",
+        "operationId": "login_endpoint_openapi_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Login Endpoint Openapi V1 Auth Login Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi/v1/files/upload": {
+      "post": {
+        "tags": [
+          "openapi"
+        ],
+        "summary": "Upload Endpoint",
+        "operationId": "upload_endpoint_openapi_v1_files_upload_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_endpoint_openapi_v1_files_upload_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Upload Endpoint Openapi V1 Files Upload Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi/v1/detections": {
+      "post": {
+        "tags": [
+          "openapi"
+        ],
+        "summary": "Create Detection Endpoint",
+        "operationId": "create_detection_endpoint_openapi_v1_detections_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenApiDetectionCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Detection Endpoint Openapi V1 Detections Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi/v1/detections/{detection_id}": {
+      "get": {
+        "tags": [
+          "openapi"
+        ],
+        "summary": "Get Detection Endpoint",
+        "operationId": "get_detection_endpoint_openapi_v1_detections__detection_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "detection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Detection Id"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Detection Endpoint Openapi V1 Detections  Detection Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi/v1/files/{file_id}": {
+      "get": {
+        "tags": [
+          "openapi"
+        ],
+        "summary": "Download Endpoint",
+        "operationId": "download_endpoint_openapi_v1_files__file_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi/v1/thresholds/current": {
+      "get": {
+        "tags": [
+          "openapi"
+        ],
+        "summary": "Current Threshold Endpoint",
+        "operationId": "current_threshold_endpoint_openapi_v1_thresholds_current_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Current Threshold Endpoint Openapi V1 Thresholds Current Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgentClassifyRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "AgentClassifyRequest"
+      },
+      "AnalyticsEventRequest": {
+        "properties": {
+          "eventName": {
+            "type": "string",
+            "title": "Eventname"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "properties": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Properties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "eventName"
+        ],
+        "title": "AnalyticsEventRequest"
+      },
+      "BatchDeleteRequest": {
+        "properties": {
+          "record_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Record Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "record_ids"
+        ],
+        "title": "BatchDeleteRequest"
+      },
+      "BatchDetectionCreateRequest": {
+        "properties": {
+          "serial_nos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Serial Nos"
+          },
+          "fault_category": {
+            "type": "string",
+            "enum": [
+              "Data accuracy",
+              "Sensor falling off",
+              "Sensor Abnormal",
+              "Application failure"
+            ],
+            "title": "Fault Category"
+          },
+          "device_files": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Files"
+          }
+        },
+        "type": "object",
+        "required": [
+          "serial_nos",
+          "fault_category"
+        ],
+        "title": "BatchDetectionCreateRequest"
+      },
+      "Body_upload_endpoint_api_v1_files_upload_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_endpoint_api_v1_files_upload_post"
+      },
+      "Body_upload_endpoint_openapi_v1_files_upload_post": {
+        "properties": {
+          "files": {
+            "items": {
+              "type": "string",
+              "contentMediaType": "application/octet-stream"
+            },
+            "type": "array",
+            "title": "Files"
+          }
+        },
+        "type": "object",
+        "required": [
+          "files"
+        ],
+        "title": "Body_upload_endpoint_openapi_v1_files_upload_post"
+      },
+      "CreateChatSessionRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": "New device judgment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "CreateChatSessionRequest"
+      },
+      "CreateChatTurnRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "assistantId": {
+            "type": "string",
+            "title": "Assistantid"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "assistantId",
+          "content"
+        ],
+        "title": "CreateChatTurnRequest"
+      },
+      "CreateUserRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "manager",
+              "dealer"
+            ],
+            "title": "Role",
+            "default": "dealer"
+          },
+          "distributor_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Distributor Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "distributor_name"
+        ],
+        "title": "CreateUserRequest"
+      },
+      "DetectionCreateRequest": {
+        "properties": {
+          "serial_no": {
+            "type": "string",
+            "title": "Serial No"
+          },
+          "fault_category": {
+            "type": "string",
+            "enum": [
+              "Data accuracy",
+              "Sensor falling off",
+              "Sensor Abnormal",
+              "Application failure"
+            ],
+            "title": "Fault Category"
+          },
+          "file_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "File Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "serial_no",
+          "fault_category"
+        ],
+        "title": "DetectionCreateRequest"
+      },
+      "DeviceSearchRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "default": ""
+          },
+          "serial_nos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Serial Nos"
+          }
+        },
+        "type": "object",
+        "title": "DeviceSearchRequest"
+      },
+      "FeedbackRequest": {
+        "properties": {
+          "feedback_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "adopted",
+                  "rejected"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback Status"
+          },
+          "verdictAdoption": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Yes",
+                  "No",
+                  "Not recorded"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdictadoption"
+          },
+          "reject_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reject Reason"
+          }
+        },
+        "type": "object",
+        "title": "FeedbackRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest"
+      },
+      "OpenApiDetectionCreateRequest": {
+        "properties": {
+          "serial_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial No"
+          },
+          "device_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Name"
+          },
+          "fault_category": {
+            "type": "string",
+            "enum": [
+              "Data accuracy",
+              "Sensor falling off",
+              "Sensor Abnormal",
+              "Application failure"
+            ],
+            "title": "Fault Category"
+          },
+          "file_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "File Ids"
+          },
+          "threshold_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold Config"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fault_category"
+        ],
+        "title": "OpenApiDetectionCreateRequest"
+      },
+      "SendMessageRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "options": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "content"
+        ],
+        "title": "SendMessageRequest"
+      },
+      "ThresholdRollbackRequest": {
+        "properties": {
+          "remark": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remark"
+          }
+        },
+        "type": "object",
+        "title": "ThresholdRollbackRequest"
+      },
+      "ThresholdSaveRequest": {
+        "properties": {
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "remark": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remark"
+          }
+        },
+        "type": "object",
+        "title": "ThresholdSaveRequest"
+      },
+      "UpdateChatSessionRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "UpdateChatSessionRequest"
+      },
+      "UpdateRemarkRequest": {
+        "properties": {
+          "remark": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remark"
+          }
+        },
+        "type": "object",
+        "title": "UpdateRemarkRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
