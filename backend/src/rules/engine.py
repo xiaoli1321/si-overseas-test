@@ -51,6 +51,7 @@ def run_rules(
     threshold_config: dict[str, Any],
     file_ids: list[str] | None = None,
     vision_analysis: dict[str, Any] | None = None,
+    prefer_file_deviation: bool = False,
 ) -> RuleResult:
     """
     售后故障判定规则引擎的核心入口函数。
@@ -64,6 +65,7 @@ def run_rules(
         threshold_config: 全局/用户自定义的判定阈值配置
         file_ids: 用户上传的凭证文件 ID 列表
         vision_analysis: VLM 视觉大模型对凭证图片的分析结果
+        prefer_file_deviation: 有文件时跳过曲线规则，仅进行图片偏差判断
     """
     # 将配置转换为规范的规则配置结构
     threshold_config = to_rule_config(threshold_config)
@@ -71,7 +73,12 @@ def run_rules(
     # 1. 血糖数据准确性诊断 ("Data accuracy")
     if fault_category == "Data accuracy":
         return _run_data_accuracy(
-            device, glucose_series, threshold_config, file_ids, vision_analysis
+            device,
+            glucose_series,
+            threshold_config,
+            file_ids,
+            vision_analysis,
+            prefer_file_deviation,
         )
 
     # 2. 传感器脱落诊断 ("Sensor falling off")
@@ -329,6 +336,7 @@ def _run_data_accuracy(
     thresholds: dict[str, Any],
     file_ids: list[str] | None = None,
     vision_analysis: dict[str, Any] | None = None,
+    prefer_file_deviation: bool = False,
 ) -> RuleResult:
     """
     诊断血糖数据准确性 (Data accuracy)。
@@ -407,6 +415,14 @@ def _run_data_accuracy(
         else None,
     }
 
+    # OpenAPI treats supplied screenshots as the source of truth for a data
+    # deviation review.  In that case do not let a curve pattern override the
+    # image-based result.
+    if prefer_file_deviation and file_ids:
+        return _run_data_accuracy_deviation(
+            device, glucose_series, thresholds, file_ids, vision_analysis, details
+        )
+
     if values and max_val <= low["max_glucose_24h"] and has_low_segment:
         return RuleResult(
             verdict="Replacement Eligible",
@@ -463,66 +479,9 @@ def _run_data_accuracy(
     )
 
     if file_ids or is_mock_deviation:
-        dev_rules = thresholds.get("data_accuracy", {}).get("data_deviation", {})
-        wear_days_raw = device.get("wear_days")
-        try:
-            wear_days = float(wear_days_raw) if wear_days_raw is not None else 0.0
-        except (ValueError, TypeError):
-            wear_days = 0.0
-
-        after_48h_wear_days = float(dev_rules.get("after48hWearDays", 2.0))
-        if after_48h_wear_days <= 0:
-            after_48h_wear_days = 2.0
-
-        is_within_48h = wear_days < after_48h_wear_days
-        if is_within_48h:
-            min_pairs = int(dev_rules.get("within48hPairCount", 2))
-        else:
-            min_pairs = int(dev_rules.get("after48hPairCount", 2))
-
-        required_images = 2 * min_pairs
-
-        if not file_ids or len(file_ids) < required_images:
-            return RuleResult(
-                verdict="Under Review",
-                issue_detected=False,
-                fault_category="Data accuracy",
-                fault_subtype="Data Deviation Review Required",
-                reasons=[
-                    f"Curve screening did not match automatic rules; paired CGM/BGM evidence is required (at least {required_images} images)."
-                ],
-                matched_rules=[],
-                evidence={
-                    "device": device,
-                    "glucose_series": glucose_series,
-                    "file_ids": file_ids or [],
-                    "data_accuracy_details": details,
-                },
-            )
-        else:
-            v_analysis = vision_analysis
-            if not v_analysis:
-                from src.integrations.vlm import fallback_glucose_analysis
-
-                v_analysis = fallback_glucose_analysis(file_ids).model_dump()
-            verdict, subtype_override, vlm_reasons = _verify_data_accuracy_vision(
-                v_analysis, thresholds, device
-            )
-            return RuleResult(
-                verdict=verdict,
-                issue_detected=(verdict == "Replacement Eligible"),
-                fault_category="Data accuracy",
-                fault_subtype=subtype_override or "Data Deviation Detected",
-                reasons=vlm_reasons,
-                matched_rules=["data_accuracy.vlm_deviation_check"],
-                evidence={
-                    "device": device,
-                    "glucose_series": glucose_series,
-                    "file_ids": file_ids,
-                    "vision_analysis": v_analysis,
-                    "data_accuracy_details": details,
-                },
-            )
+        return _run_data_accuracy_deviation(
+            device, glucose_series, thresholds, file_ids or [], vision_analysis, details
+        )
 
     return RuleResult(
         verdict="Under Review",
@@ -536,6 +495,75 @@ def _run_data_accuracy(
         evidence={
             "device": device,
             "glucose_series": glucose_series,
+            "data_accuracy_details": details,
+        },
+    )
+
+
+def _run_data_accuracy_deviation(
+    device: dict[str, Any],
+    glucose_series: dict[str, Any],
+    thresholds: dict[str, Any],
+    file_ids: list[str],
+    vision_analysis: dict[str, Any] | None,
+    details: dict[str, Any],
+) -> RuleResult:
+    dev_rules = thresholds.get("data_accuracy", {}).get("data_deviation", {})
+    wear_days_raw = device.get("wear_days")
+    try:
+        wear_days = float(wear_days_raw) if wear_days_raw is not None else 0.0
+    except (ValueError, TypeError):
+        wear_days = 0.0
+
+    after_48h_wear_days = float(dev_rules.get("after48hWearDays", 2.0))
+    if after_48h_wear_days <= 0:
+        after_48h_wear_days = 2.0
+    min_pairs = int(
+        dev_rules.get(
+            "within48hPairCount" if wear_days < after_48h_wear_days else "after48hPairCount",
+            2,
+        )
+    )
+    required_images = 2 * min_pairs
+
+    if len(file_ids) < required_images:
+        return RuleResult(
+            verdict="Under Review",
+            issue_detected=False,
+            fault_category="Data accuracy",
+            fault_subtype="Data Deviation Review Required",
+            reasons=[
+                f"Paired CGM/BGM evidence is required for data-deviation review (at least {required_images} images)."
+            ],
+            matched_rules=[],
+            evidence={
+                "device": device,
+                "glucose_series": glucose_series,
+                "file_ids": file_ids,
+                "data_accuracy_details": details,
+            },
+        )
+
+    v_analysis = vision_analysis
+    if not v_analysis:
+        from src.integrations.vlm import fallback_glucose_analysis
+
+        v_analysis = fallback_glucose_analysis(file_ids).model_dump()
+    verdict, subtype_override, vlm_reasons = _verify_data_accuracy_vision(
+        v_analysis, thresholds, device
+    )
+    return RuleResult(
+        verdict=verdict,
+        issue_detected=(verdict == "Replacement Eligible"),
+        fault_category="Data accuracy",
+        fault_subtype=subtype_override or "Data Deviation Detected",
+        reasons=vlm_reasons,
+        matched_rules=["data_accuracy.vlm_deviation_check"],
+        evidence={
+            "device": device,
+            "glucose_series": glucose_series,
+            "file_ids": file_ids,
+            "vision_analysis": v_analysis,
             "data_accuracy_details": details,
         },
     )
