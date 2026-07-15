@@ -70,6 +70,29 @@ def test_data_accuracy_should_match_persistently_low() -> None:
     assert "data_accuracy.persistently_low" in result.matched_rules
 
 
+def test_openapi_data_accuracy_with_files_only_runs_deviation_review() -> None:
+    result = run_rules(
+        fault_category="Data accuracy",
+        device={"serial_no": "SN1", "wear_days": 2.0},
+        glucose_series=_series([2.7] * 10 + [7.4]),
+        alarm={},
+        threshold_config=default_thresholds(),
+        file_ids=["file1", "file2", "file3", "file4"],
+        vision_analysis={
+            "glucose_readings": [
+                {"value": 5.0, "device_type": "CGM", "unit": "mmol/L", "is_valid": True, "is_reproduced": False},
+                {"value": 5.1, "device_type": "BGM", "unit": "mmol/L", "is_valid": True, "is_reproduced": False},
+                {"value": 6.0, "device_type": "CGM", "unit": "mmol/L", "is_valid": True, "is_reproduced": False},
+                {"value": 6.1, "device_type": "BGM", "unit": "mmol/L", "is_valid": True, "is_reproduced": False},
+            ]
+        },
+        prefer_file_deviation=True,
+    )
+
+    assert result.fault_subtype == "Accuracy Within Normal Limits"
+    assert result.matched_rules == ["data_accuracy.vlm_deviation_check"]
+
+
 def test_data_accuracy_should_not_sum_non_continuous_low_segments() -> None:
     start = datetime(2026, 6, 1, tzinfo=UTC)
     glucose_series = _series_from(start, [2.7] * 5 + [5.0] + [2.7] * 5)

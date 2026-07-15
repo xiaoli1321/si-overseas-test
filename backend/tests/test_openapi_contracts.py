@@ -8,6 +8,7 @@ from src.api.openapi import (
     _detection_data,
     _request_hash,
     _resolve_serial_no,
+    _validate_upload_image,
 )
 from src.core.exceptions import BusinessValidationError
 from src.main import app
@@ -26,6 +27,33 @@ def test_openapi_paths_are_isolated_from_web_api() -> None:
         "/openapi/v1/thresholds/current",
     }.issubset(paths)
     assert "/api/v1/detections" in paths
+
+
+@pytest.mark.parametrize(
+    ("filename", "mime_type"),
+    [
+        ("evidence.png", "image/png"),
+        ("evidence.jpg", "image/jpeg"),
+        ("evidence.jpe", "image/jpeg"),
+        ("evidence.webp", "image/webp"),
+        ("evidence.bmp", "image/x-ms-bmp"),
+        ("evidence.heic", "image/heic"),
+        ("evidence.tiff", "image/tiff"),
+    ],
+)
+def test_openapi_upload_accepts_supported_image_formats(
+    filename: str, mime_type: str
+) -> None:
+    _validate_upload_image(
+        SimpleNamespace(filename=filename, content_type=mime_type, size=1024)
+    )
+
+
+def test_openapi_upload_rejects_an_unsupported_image_format() -> None:
+    with pytest.raises(BusinessValidationError, match="Unsupported image format"):
+        _validate_upload_image(
+            SimpleNamespace(filename="evidence.gif", content_type="image/gif", size=1024)
+        )
 
 
 def test_openapi_threshold_template_is_default_and_copyable() -> None:
@@ -61,6 +89,11 @@ def test_openapi_request_requires_one_device_identifier_and_normalizes_it() -> N
         {"deviceName": " aa123 ", "faultCategory": "Sensor Abnormal"}
     )
     assert by_name.device_name == "AA123"
+
+    with_null_file_ids = OpenApiDetectionCreateRequest.model_validate(
+        {"serialNo": "SN-1", "faultCategory": "Data accuracy", "fileIds": None}
+    )
+    assert with_null_file_ids.file_ids == []
 
     with pytest.raises(ValueError, match="serialNo or deviceName"):
         OpenApiDetectionCreateRequest.model_validate(

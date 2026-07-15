@@ -4,6 +4,7 @@ from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 import hashlib
 import json
+from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Header, UploadFile
@@ -37,6 +38,23 @@ router = APIRouter(tags=["openapi"])
 
 MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
 IDEMPOTENCY_TTL = timedelta(hours=24)
+SUPPORTED_IMAGE_EXTENSIONS = frozenset(
+    {".png", ".jpg", ".jpeg", ".jpe", ".webp", ".bmp", ".heic", ".tif", ".tiff"}
+)
+SUPPORTED_IMAGE_MIME_TYPES = frozenset(
+    {
+        "image/png",
+        "image/jpeg",
+        "image/pjpeg",
+        "image/webp",
+        "image/bmp",
+        "image/x-ms-bmp",
+        "image/heic",
+        "image/heif",
+        "image/tiff",
+        "image/x-tiff",
+    }
+)
 
 
 def _camelize(value: Any) -> Any:
@@ -50,6 +68,20 @@ def _camelize(value: Any) -> Any:
         camel_key = parts[0] + "".join(part.title() for part in parts[1:])
         result[camel_key] = _camelize(item)
     return result
+
+
+def _validate_upload_image(file: UploadFile) -> None:
+    extension = Path(file.filename or "").suffix.lower()
+    if extension not in SUPPORTED_IMAGE_EXTENSIONS:
+        raise BusinessValidationError(
+            "Unsupported image format. Supported formats: PNG, JPG/JPEG/JPE, WEBP, BMP, HEIC, TIFF."
+        )
+    if (file.content_type or "").lower() not in SUPPORTED_IMAGE_MIME_TYPES:
+        raise BusinessValidationError(
+            "Unsupported image MIME type. Supported formats: PNG, JPG/JPEG/JPE, WEBP, BMP, HEIC, TIFF."
+        )
+    if file.size is not None and file.size > MAX_IMAGE_SIZE_BYTES:
+        raise BusinessValidationError("Each image must be 10MB or smaller.")
 
 
 def _timestamp(value: datetime | None) -> str | None:
@@ -230,10 +262,7 @@ async def upload_endpoint(
     if not files:
         raise BusinessValidationError("At least one image file is required.")
     for file in files:
-        if not (file.content_type or "").startswith("image/"):
-            raise BusinessValidationError("Only image/* files are accepted.")
-        if file.size is not None and file.size > MAX_IMAGE_SIZE_BYTES:
-            raise BusinessValidationError("Each image must be 10MB or smaller.")
+        _validate_upload_image(file)
 
     saved = []
     for file in files:

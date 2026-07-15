@@ -470,6 +470,7 @@ async def execute_detection(
             threshold_config=threshold_config,
             file_ids=file_ids,
             vision_analysis=vision_analysis,
+            prefer_file_deviation=(record.source == "openapi" and bool(file_ids)),
         )
 
         # Step 6: 判定成功，回填诊断记录 (DetectRecord) 相关属性

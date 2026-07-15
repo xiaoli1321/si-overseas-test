@@ -204,7 +204,7 @@ class OpenApiDetectionCreateRequest(BaseModel):
     fault_category: FaultCategory = Field(
         validation_alias=AliasChoices("fault_category", "faultCategory")
     )
-    file_ids: list[str] = Field(
+    file_ids: list[str] | None = Field(
         default_factory=list, validation_alias=AliasChoices("file_ids", "fileIds")
     )
     threshold_config: dict | None = Field(
@@ -212,6 +212,13 @@ class OpenApiDetectionCreateRequest(BaseModel):
     )
 
     model_config = ConfigDict(populate_by_name=True)
+
+    @field_validator("file_ids", mode="before")
+    @classmethod
+    def normalize_file_ids(cls, value: object) -> object:
+        # OpenAPI callers may explicitly send `fileIds: null`; treat that the
+        # same as an omitted field so it follows the curve-only path.
+        return [] if value is None else value
 
     @model_validator(mode="after")
     def normalize_identifier(self) -> "OpenApiDetectionCreateRequest":
