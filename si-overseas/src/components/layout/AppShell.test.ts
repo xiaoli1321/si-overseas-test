@@ -1,7 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { createMemoryHistory, createRouter } from 'vue-router';
-import { backendApi } from '@/api/backend';
 import { useDemoStore } from '@/composables/useDemoStore';
 import AppShell from './AppShell.vue';
 
@@ -287,12 +286,12 @@ describe('AppShell', () => {
     expect(router.currentRoute.value.name).toBe('login');
   });
 
-  it('hides or shows the create user account menu item based on role', async () => {
+  it('shows manager-only menu items (dashboard, account center) based on role', async () => {
     const router = makeRouter();
     await router.push('/chat');
     await router.isReady();
 
-    // 1. Manager role should see "Create user" button
+    // Manager sees Dashboard + Account center entries.
     const store = useDemoStore();
     store.currentAccountProfile.value = {
       email: 'manager@sibionics.com',
@@ -308,12 +307,14 @@ describe('AppShell', () => {
       global: { plugins: [router] },
       slots: { default: '<main>Content</main>' },
     });
-
     await wrapper.find('.user-pill').trigger('click');
     await flushPromises();
-    expect(wrapper.find('[data-test="account-create-user"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="dashboard-link"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="account-center-link"]').exists()).toBe(true);
+    // Create account moved to the Account Center page — no longer in the menu.
+    expect(wrapper.find('[data-test="account-create-user"]').exists()).toBe(false);
 
-    // 2. Dealer role should NOT see "Create user" button
+    // Dealer sees neither.
     store.currentAccountProfile.value = {
       email: 'dealer@sibionics.com',
       displayName: 'Dealer User',
@@ -330,104 +331,8 @@ describe('AppShell', () => {
     });
     await wrapper2.find('.user-pill').trigger('click');
     await flushPromises();
-    expect(wrapper2.find('[data-test="account-create-user"]').exists()).toBe(false);
-  });
-
-  it('creates a dealer user account successfully', async () => {
-    const router = makeRouter();
-    await router.push('/chat');
-    await router.isReady();
-    const createSpy = vi.spyOn(backendApi, 'createUser').mockResolvedValue({
-      email: 'newdealer@sibionics.com',
-      displayName: 'newdealer@sibionics.com',
-      role: 'dealer',
-      dealerId: 'newdealer-id',
-      dealerName: 'New Distributor',
-      organizationName: 'New Distributor',
-      organizationType: 'Distributor',
-      region: 'A Region',
-    });
-    const wrapper = mount(AppShell, {
-      global: { plugins: [router] },
-      slots: { default: '<main>Content</main>' },
-    });
-    const store = useDemoStore();
-    store.currentAccountProfile.value = {
-      email: 'manager@sibionics.com',
-      displayName: 'Manager User',
-      role: 'manager',
-      dealerId: 'manager-id',
-      dealerName: 'Manager Name',
-      organizationName: 'Manager Name',
-      organizationType: 'Distributor',
-      region: 'A Region',
-    };
-    store.backendOnline.value = true;
-
-    await wrapper.find('.user-pill').trigger('click');
-    await wrapper.find('[data-test="account-create-user"]').trigger('click');
-    await flushPromises();
-
-    expect(wrapper.find('[data-test="create-user-form"]').exists()).toBe(true);
-    expect(wrapper.find('[data-test="create-user-role"]').exists()).toBe(false);
-
-    await wrapper.find('[data-test="create-user-email"]').setValue('newdealer@sibionics.com');
-    await wrapper.find('[data-test="create-user-distributor"]').setValue('New Distributor');
-    await wrapper.find('[data-test="create-user-password"]').setValue('password123');
-    await wrapper.find('[data-test="create-user-confirm-password"]').setValue('password123');
-    await wrapper.find('[data-test="create-user-form"]').trigger('submit');
-    await flushPromises();
-
-    expect(createSpy).toHaveBeenCalledWith({
-      email: 'newdealer@sibionics.com',
-      password: 'password123',
-      distributorName: 'New Distributor',
-    });
-    expect(wrapper.find('[data-test="create-user-form"]').exists()).toBe(false);
-    expect(wrapper.find('[data-test="create-alert-ok"]').exists()).toBe(true);
-    await wrapper.find('[data-test="create-alert-ok"]').trigger('click');
-    await flushPromises();
-    expect(wrapper.find('[data-test="create-alert-ok"]').exists()).toBe(false);
-  });
-
-  it('toggles password visibility with icon buttons in the create user modal', async () => {
-    const router = makeRouter();
-    await router.push('/chat');
-    await router.isReady();
-    const wrapper = mount(AppShell, {
-      global: { plugins: [router] },
-      slots: { default: '<main>Content</main>' },
-    });
-    const store = useDemoStore();
-    store.currentAccountProfile.value = {
-      email: 'manager@sibionics.com',
-      displayName: 'Manager User',
-      role: 'manager',
-      dealerId: 'manager-id',
-      dealerName: 'Manager Name',
-      organizationName: 'Manager Name',
-      organizationType: 'Distributor',
-      region: 'A Region',
-    };
-
-    await wrapper.find('.user-pill').trigger('click');
-    await wrapper.find('[data-test="account-create-user"]').trigger('click');
-    await flushPromises();
-
-    const passwordInput = () => wrapper.find('[data-test="create-user-password"]').element as HTMLInputElement;
-    const confirmInput = () => wrapper.find('[data-test="create-user-confirm-password"]').element as HTMLInputElement;
-
-    expect(passwordInput().type).toBe('password');
-    expect(confirmInput().type).toBe('password');
-    expect(wrapper.find('[data-test="create-user-password-toggle"]').text()).toBe('');
-    expect(wrapper.find('[data-test="create-user-confirm-password-toggle"]').text()).toBe('');
-    expect(wrapper.find('[data-test="create-user-password-toggle"]').classes()).toContain('create-user-password-toggle');
-
-    await wrapper.find('[data-test="create-user-password-toggle"]').trigger('click');
-    await wrapper.find('[data-test="create-user-confirm-password-toggle"]').trigger('click');
-
-    expect(passwordInput().type).toBe('text');
-    expect(confirmInput().type).toBe('text');
+    expect(wrapper2.find('[data-test="dashboard-link"]').exists()).toBe(false);
+    expect(wrapper2.find('[data-test="account-center-link"]').exists()).toBe(false);
   });
 
   it('closes the account dropdown when clicking outside', async () => {

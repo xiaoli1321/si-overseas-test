@@ -42,6 +42,81 @@ export interface CreateUserPayload {
   distributorName: string;
 }
 
+export interface ManagedUser {
+  id: string;
+  email: string;
+  role: string;
+  dealerName: string;
+  createdAt: string | null;
+}
+
+export interface ResetPasswordResult {
+  id: string;
+  email: string;
+  password: string;
+}
+
+export interface DashboardScenarioRow {
+  scenario: string;
+  problemEntries: number;
+  deviceDetections: number;
+  eligible: number;
+  notEligible: number;
+  detecting: number;
+  adopted: number;
+  rejected: number;
+  adoptionRate: number;
+}
+
+export interface DashboardOverview {
+  core: {
+    problemEntries: number;
+    deviceDetections: number;
+    eligible: number;
+    notEligible: number;
+    detecting: number;
+    adopted: number;
+    rejected: number;
+    adoptionRate: number;
+  };
+  byScenario: DashboardScenarioRow[];
+  conclusionDist: Array<{ label: string; count: number; ratio: number }>;
+  afterSalesDist: Array<{ label: string; count: number; ratio: number }>;
+  daily: Array<{
+    date: string;
+    problemEntries: number;
+    deviceDetections: number;
+    eligible: number;
+    notEligible: number;
+    detecting: number;
+    adopted: number;
+  }>;
+  countries: string[];
+}
+
+export interface DashboardDetailRow {
+  recordType: string;
+  date: string | null;
+  country: string;
+  account: string;
+  sn: string;
+  deviceType: string;
+  scenario: string;
+  conclusion: string;
+  afterSales: string;
+  adopted: string;
+  rejectReason: string;
+  ruleVersion: string;
+  detectTime: string;
+}
+
+export interface DashboardFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  country?: string;
+  accountId?: string;
+}
+
 interface Envelope<T> {
   code: number;
   message: string;
@@ -172,6 +247,52 @@ export const backendApi = {
     });
   },
 
+  /** Manager-only: list the accounts the current manager has provisioned. */
+  getUsers(): Promise<ManagedUser[]> {
+    return request<ManagedUser[]>('/api/v1/auth/users');
+  },
+
+  /** Manager-only: reset a managed account's password; returns the new plaintext once. */
+  resetUserPassword(userId: string, password?: string): Promise<ResetPasswordResult> {
+    return request<ResetPasswordResult>(
+      `/api/v1/auth/users/${encodeURIComponent(userId)}/reset-password`,
+      {
+        method: 'POST',
+        body: JSON.stringify(password ? { password } : {}),
+      },
+    );
+  },
+
+  /** Manager-only: 概览 — aggregated dashboard (matches 大盘数据概览). */
+  getDashboardOverview(filters: DashboardFilters = {}): Promise<DashboardOverview> {
+    const qs = new URLSearchParams();
+    if (filters.dateFrom) qs.set('date_from', filters.dateFrom);
+    if (filters.dateTo) qs.set('date_to', filters.dateTo);
+    if (filters.country) qs.set('country', filters.country);
+    if (filters.accountId) qs.set('account_id', filters.accountId);
+    const query = qs.toString();
+    return request<DashboardOverview>(`/api/v1/analytics/dashboard/overview${query ? `?${query}` : ''}`);
+  },
+
+  /** Manager-only: 明细 — paginated detection detail (matches 明细数据). */
+  async getDashboardDetail(
+    filters: DashboardFilters = {},
+    page = 1,
+    pageSize = 20,
+  ): Promise<{ items: DashboardDetailRow[]; total: number; page: number; pageSize: number }> {
+    const qs = new URLSearchParams();
+    qs.set('page', String(page));
+    qs.set('page_size', String(pageSize));
+    if (filters.dateFrom) qs.set('date_from', filters.dateFrom);
+    if (filters.dateTo) qs.set('date_to', filters.dateTo);
+    if (filters.country) qs.set('country', filters.country);
+    if (filters.accountId) qs.set('account_id', filters.accountId);
+    const data = await request<{ items: DashboardDetailRow[]; total: number; page: number; page_size: number }>(
+      `/api/v1/analytics/dashboard/detail?${qs.toString()}`,
+    );
+    return { items: data.items, total: data.total, page: data.page, pageSize: data.page_size };
+  },
+
   getDevice(sn: string): Promise<Device> {
     return request<Device>(`/api/v1/devices/${encodeURIComponent(sn)}`);
   },
@@ -291,6 +412,7 @@ export const backendApi = {
     serialNo?: string;
     dateFrom?: string;
     dateTo?: string;
+    accountId?: string;
   } = {}): Promise<{ items: DetectRecord[]; total: number; page: number; pageSize: number }> {
     const qs = new URLSearchParams();
     qs.set('page', String(params.page ?? 1));
@@ -300,6 +422,7 @@ export const backendApi = {
     if (params.serialNo) qs.set('serial_no', params.serialNo);
     if (params.dateFrom) qs.set('date_from', params.dateFrom);
     if (params.dateTo) qs.set('date_to', params.dateTo);
+    if (params.accountId) qs.set('account_id', params.accountId);
     const data = await request<{ items: DetectRecord[]; total: number; page: number; page_size: number }>(
       `/api/v1/records?${qs.toString()}`
     );
@@ -317,6 +440,7 @@ export const backendApi = {
     serialNo?: string;
     dateFrom?: string;
     dateTo?: string;
+    accountId?: string;
   } = {}): string {
     const qs = new URLSearchParams();
     if (params.faultCategory) qs.set('fault_category', params.faultCategory);
@@ -324,6 +448,7 @@ export const backendApi = {
     if (params.serialNo) qs.set('serial_no', params.serialNo);
     if (params.dateFrom) qs.set('date_from', params.dateFrom);
     if (params.dateTo) qs.set('date_to', params.dateTo);
+    if (params.accountId) qs.set('account_id', params.accountId);
     const token = getStoredToken();
     if (token) qs.set('token', token);
     const query = qs.toString();

@@ -1,9 +1,19 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.exceptions import BusinessValidationError, ForbiddenError, UnauthorizedError
-from src.core.security import create_access_token, hash_password, verify_password
+from src.core.exceptions import (
+    BusinessValidationError,
+    ForbiddenError,
+    NotFoundError,
+    UnauthorizedError,
+)
+from src.core.security import (
+    create_access_token,
+    generate_password,
+    hash_password,
+    verify_password,
+)
 from src.models.tables import Threshold, User
-from src.repositories.store import get_user_by_email
+from src.repositories.store import get_user_by_email, get_user_by_id
 from src.rules.thresholds import default_thresholds
 from src.services.analytics import track_login
 from src.services.audit import record_audit_event
@@ -62,6 +72,7 @@ async def create_user(
         username=normalized_email,
         password=hash_password(password),
         role=role,
+        created_by=actor.id,
     )
     db.add(user)
     await db.flush()
@@ -90,3 +101,43 @@ async def create_user(
     )
     await db.commit()
     return user
+
+
+async def reset_account_password(
+    db: AsyncSession,
+    *,
+    actor: User,
+    target_user_id: int,
+    new_password: str | None = None,
+) -> tuple[User, str]:
+    """Reset a managed account's password and return the new plaintext once.
+
+    Passwords are bcrypt-hashed and never recoverable, so the account center
+    resets instead of revealing. A manager may only reset accounts they created.
+    The plaintext is returned to the caller for one-time display and is never
+    written to logs or the audit trail.
+    """
+    if actor.role != "manager":
+        raise ForbiddenError("Only manager users can reset account passwords.")
+    target = await get_user_by_id(db, target_user_id)
+    if target is None or target.created_by != actor.id:
+        raise NotFoundError("Account was not found.")
+
+    password = (new_password or "").strip() or generate_password()
+    if len(password) < 8:
+        raise BusinessValidationError("Password must be at least 8 characters.")
+
+    target.password = hash_password(password)
+    await record_audit_event(
+        db,
+        user_id=actor.id,
+        action="auth.password_reset",
+        target_type="user",
+        target_id=target.id,
+        metadata={
+            "target_user_id": target.id,
+            "target_username": target.username,
+        },
+    )
+    await db.commit()
+    return target, password

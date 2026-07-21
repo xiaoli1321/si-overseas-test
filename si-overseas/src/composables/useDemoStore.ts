@@ -91,6 +91,9 @@ let remoteStatsRequestId = 0;
 // Resolve the account and role profile from the current email address.
 const currentAccount = computed(() => currentAccountProfile.value ?? resolveAccountProfile(currentUser.value));
 const canCreateUsers = computed(() => currentAccount.value.role === 'manager');
+// Manager accounts (Sibionics internal) see cross-account views: the account
+// center and the per-account column/filter on Detection History.
+const isManager = computed(() => currentAccount.value.role === 'manager');
 const canManageThresholds = computed(() => true);
 // Diagnosis records visible to the current dealer account.
 const visibleRecords = computed(() => {
@@ -1698,6 +1701,7 @@ export function useDemoStore() {
   return {
     CUSTOMER_EMAIL,
     canCreateUsers,
+    isManager,
     canManageThresholds,
     currentAccount,
     currentAccountProfile,

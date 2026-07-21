@@ -8,6 +8,8 @@ import MultiDetectView from '@/views/MultiDetectView.vue';
 import DetectFlowView from '@/views/DetectFlowView.vue';
 import DetectRecordsView from '@/views/DetectRecordsView.vue';
 import ThresholdsView from '@/views/ThresholdsView.vue';
+import AccountCenterView from '@/views/AccountCenterView.vue';
+import DashboardView from '@/views/DashboardView.vue';
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -22,6 +24,8 @@ const router = createRouter({
     { path: '/detect/:sn([a-zA-Z0-9]{10,30})', name: 'detect', component: DetectFlowView, props: true },
     { path: '/records', name: 'records', component: DetectRecordsView },
     { path: '/thresholds', name: 'thresholds', component: ThresholdsView },
+    { path: '/accounts', name: 'accounts', component: AccountCenterView },
+    { path: '/dashboard', name: 'dashboard', component: DashboardView },
     { path: '/:pathMatch(.*)*', name: 'not-found', redirect: '/chat' },
   ],
 });

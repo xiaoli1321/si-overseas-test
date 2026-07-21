@@ -15,6 +15,8 @@ from src.core.responses import ok
 from src.models.tables import User
 from src.repositories.store import (
     get_record,
+    get_user_by_id,
+    get_users_by_ids,
     iter_records_for_export,
     list_records,
     stats,
@@ -72,12 +74,13 @@ async def list_endpoint(
     serial_no: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    account_id: int | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
     records, total = await list_records(
         db,
-        user.id,
+        user,
         source="web",
         fault_category=fault_category,
         verdict=verdict,
@@ -85,10 +88,15 @@ async def list_endpoint(
         date_from=_parse_date_from(date_from),
         date_to=_parse_date_to(date_to),
         conclusion=conclusion,
+        account_id=account_id,
         page=page,
         page_size=page_size,
     )
-    items = [record_to_list_item(record) for record in records]
+    submitters = await get_users_by_ids(db, [record.user_id for record in records])
+    items = [
+        record_to_list_item(record, submitters.get(record.user_id))
+        for record in records
+    ]
     logger.info(
         "Detection records listed",
         extra=log_context(
@@ -110,7 +118,7 @@ async def stats_endpoint(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
-    data = stats_to_frontend(await stats(db, user.id, source="web"))
+    data = stats_to_frontend(await stats(db, user, source="web"))
     logger.info(
         "Detection record stats loaded",
         extra=log_context("records.stats_loaded", user_id=user.id),
@@ -128,6 +136,7 @@ async def export_endpoint(
     serial_no: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    account_id: int | None = None,
 ) -> StreamingResponse:
     import openpyxl
     from openpyxl.utils import get_column_letter
@@ -153,7 +162,7 @@ async def export_endpoint(
 
     async for records in iter_records_for_export(
         db,
-        user.id,
+        user,
         source="web",
         fault_category=fault_category,
         verdict=verdict,
@@ -161,6 +170,7 @@ async def export_endpoint(
         date_from=_parse_date_from(date_from),
         date_to=_parse_date_to(date_to),
         conclusion=conclusion,
+        account_id=account_id,
     ):
         for record in records:
             profile = record.threshold_snapshot or {
@@ -262,14 +272,15 @@ async def detail_endpoint(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
-    record = await get_record(db, user.id, record_id, source="web")
+    record = await get_record(db, user.id, record_id, source="web", viewer=user)
     if record is None:
         raise NotFoundError("Detect record was not found.")
+    submitter = await get_user_by_id(db, record.user_id)
     logger.info(
         "Detection record loaded",
         extra=log_context("records.loaded", user_id=user.id, record_id=record_id),
     )
-    return ok(record_to_frontend(record, user))
+    return ok(record_to_frontend(record, submitter or user))
 
 
 @router.post("/{record_id}/feedback")
