@@ -42,42 +42,65 @@ function formatTs(iso: string | null) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(d);
 }
 
-// ─── Create account ───
-const showCreate = ref(false);
-const createForm = ref({ email: '', password: '', distributorName: '', role: 'dealer' as 'dealer' | 'manager' });
-const creating = ref(false);
-const createError = ref('');
+// ─── Create account (same UX/style as the former top-bar "Create user") ───
+const createUserOpen = ref(false);
+const createUserEmail = ref('');
+const createUserPassword = ref('');
+const createUserConfirmPassword = ref('');
+const createUserDistributorName = ref('');
+const createUserError = ref('');
+const createUserSubmitting = ref(false);
+const showCreateUserPassword = ref(false);
+const showCreateUserConfirmPassword = ref(false);
 
-function openCreate() {
-  createForm.value = { email: '', password: '', distributorName: '', role: 'dealer' };
-  createError.value = '';
-  showCreate.value = true;
+function openCreateUser() {
+  createUserOpen.value = true;
+  createUserError.value = '';
+  createUserEmail.value = '';
+  createUserPassword.value = '';
+  createUserConfirmPassword.value = '';
+  showCreateUserPassword.value = false;
+  showCreateUserConfirmPassword.value = false;
+  createUserDistributorName.value = '';
 }
 
-function closeCreate() {
-  showCreate.value = false;
+function closeCreateUser() {
+  if (createUserSubmitting.value) return;
+  createUserOpen.value = false;
 }
 
-async function submitCreate() {
-  const { email, password, distributorName, role } = createForm.value;
-  if (!email.trim() || !distributorName.trim()) {
-    createError.value = 'Email and dealer name are required.';
+async function submitCreateUser() {
+  const email = createUserEmail.value.trim();
+  const password = createUserPassword.value;
+  const distributorName = createUserDistributorName.value.trim();
+  createUserError.value = '';
+
+  if (!email) {
+    createUserError.value = 'Email is required.';
     return;
   }
-  if (password.trim().length < 8) {
-    createError.value = 'Password must be at least 8 characters.';
+  if (!distributorName) {
+    createUserError.value = 'Distributor name is required.';
     return;
   }
-  creating.value = true;
-  createError.value = '';
+  if (password.length < 8) {
+    createUserError.value = 'Temporary password must be at least 8 characters.';
+    return;
+  }
+  if (password !== createUserConfirmPassword.value) {
+    createUserError.value = 'Passwords do not match.';
+    return;
+  }
+
+  createUserSubmitting.value = true;
   try {
-    await store.createUserRemote(email.trim(), password, distributorName.trim(), role);
-    showCreate.value = false;
+    await store.createUserRemote(email, password, distributorName);
+    createUserOpen.value = false;
     await loadAccounts();
-  } catch (err) {
-    createError.value = (err as Error).message || 'Failed to create account.';
+  } catch (err: any) {
+    createUserError.value = err?.message || 'Failed to create account.';
   } finally {
-    creating.value = false;
+    createUserSubmitting.value = false;
   }
 }
 
@@ -145,7 +168,7 @@ async function copyPassword() {
             use <strong>Reset password</strong> to set a new one, which is displayed once so you can pass it on.
           </p>
         </div>
-        <button class="btn btn-primary" type="button" data-test="account-create-open" @click="openCreate">&#43; New account</button>
+        <button class="btn btn-primary" type="button" data-test="account-create-open" @click="openCreateUser">&#43; Create account</button>
       </div>
 
       <div class="table-wrap slide-up stagger-2">
@@ -167,7 +190,7 @@ async function copyPassword() {
             <tr v-else-if="!accounts.length">
               <td colspan="5">
                 <div class="empty-state" style="padding: 28px">
-                  No accounts yet. Click <strong>New account</strong> to create your first dealer login.
+                  No accounts yet. Click <strong>Create account</strong> to create your first dealer login.
                 </div>
               </td>
             </tr>
@@ -189,36 +212,95 @@ async function copyPassword() {
       </div>
     </div>
 
-    <!-- Create account modal -->
-    <div v-if="showCreate" class="modal-overlay accounts-modal-overlay" role="presentation" @click.self="closeCreate" data-test="account-create-modal">
-      <section class="modal accounts-modal" role="dialog" aria-modal="true" aria-labelledby="account-create-title">
-        <h2 id="account-create-title">New account</h2>
-        <label class="accounts-field">
-          <span>Email</span>
-          <input v-model="createForm.email" class="form-input" type="email" autocomplete="off" placeholder="dealer@example.com" />
-        </label>
-        <label class="accounts-field">
-          <span>Dealer / Organization name</span>
-          <input v-model="createForm.distributorName" class="form-input" type="text" placeholder="e.g. Germany Dealer" />
-        </label>
-        <label class="accounts-field">
-          <span>Password (min 8 chars)</span>
-          <input v-model="createForm.password" class="form-input" type="text" autocomplete="off" placeholder="Set an initial password" />
-        </label>
-        <label class="accounts-field">
-          <span>Role</span>
-          <select v-model="createForm.role" class="form-input">
-            <option value="dealer">dealer</option>
-            <option value="manager">manager</option>
-          </select>
-        </label>
-        <p v-if="createError" class="accounts-modal-error" data-test="account-create-error">{{ createError }}</p>
-        <div class="modal-actions accounts-modal-actions">
-          <button class="btn btn-secondary btn-sm" type="button" @click="closeCreate">Cancel</button>
-          <button class="btn btn-primary btn-sm" type="button" data-test="account-create-submit" :disabled="creating" @click="submitCreate">
-            {{ creating ? 'Creating…' : 'Create account' }}
-          </button>
+    <!-- Create account modal (ported from the former top-bar Create user, same style) -->
+    <div v-if="createUserOpen" class="modal-overlay accounts-modal-overlay" role="presentation" @click.self="closeCreateUser" data-test="account-create-modal">
+      <section class="modal create-user-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title">
+        <div class="create-user-head">
+          <div>
+            <h2 id="create-user-title">Create account</h2>
+            <p>New users can sign in after the account is created.</p>
+          </div>
+          <button class="toolbar-icon-btn" type="button" aria-label="Close create account dialog" @click="closeCreateUser">&times;</button>
         </div>
+        <form class="create-user-form" data-test="create-user-form" @submit.prevent="submitCreateUser">
+          <label class="create-user-field">
+            <span>Email</span>
+            <input v-model="createUserEmail" class="form-input" type="email" autocomplete="off" data-test="create-user-email" required />
+          </label>
+          <label class="create-user-field">
+            <span>Distributor name</span>
+            <input v-model="createUserDistributorName" class="form-input" type="text" autocomplete="organization" data-test="create-user-distributor" required />
+          </label>
+          <label class="create-user-field">
+            <span>Temporary password</span>
+            <span class="create-user-password-wrap">
+              <input
+                v-model="createUserPassword"
+                class="form-input create-user-password-input"
+                :type="showCreateUserPassword ? 'text' : 'password'"
+                autocomplete="new-password"
+                data-test="create-user-password"
+                required
+              />
+              <button
+                class="create-user-password-toggle"
+                type="button"
+                data-test="create-user-password-toggle"
+                :aria-label="showCreateUserPassword ? 'Hide temporary password' : 'Show temporary password'"
+                @click="showCreateUserPassword = !showCreateUserPassword"
+              >
+                <svg v-if="showCreateUserPassword" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 3l18 18" />
+                  <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                  <path d="M9.5 5.3A10.6 10.6 0 0 1 12 5c5.2 0 8.6 4.7 9.6 6.4a1.1 1.1 0 0 1 0 1.2 18.2 18.2 0 0 1-2.7 3.3" />
+                  <path d="M6.7 6.8a17.5 17.5 0 0 0-4.3 4.6 1.1 1.1 0 0 0 0 1.2C3.4 14.3 6.8 19 12 19a10.7 10.7 0 0 0 4.1-.8" />
+                </svg>
+                <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2.4 11.4C3.4 9.7 6.8 5 12 5s8.6 4.7 9.6 6.4a1.1 1.1 0 0 1 0 1.2C20.6 14.3 17.2 19 12 19s-8.6-4.7-9.6-6.4a1.1 1.1 0 0 1 0-1.2Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </span>
+          </label>
+          <label class="create-user-field">
+            <span>Confirm password</span>
+            <span class="create-user-password-wrap">
+              <input
+                v-model="createUserConfirmPassword"
+                class="form-input create-user-password-input"
+                :type="showCreateUserConfirmPassword ? 'text' : 'password'"
+                autocomplete="new-password"
+                data-test="create-user-confirm-password"
+                required
+              />
+              <button
+                class="create-user-password-toggle"
+                type="button"
+                data-test="create-user-confirm-password-toggle"
+                :aria-label="showCreateUserConfirmPassword ? 'Hide confirmed password' : 'Show confirmed password'"
+                @click="showCreateUserConfirmPassword = !showCreateUserConfirmPassword"
+              >
+                <svg v-if="showCreateUserConfirmPassword" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 3l18 18" />
+                  <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                  <path d="M9.5 5.3A10.6 10.6 0 0 1 12 5c5.2 0 8.6 4.7 9.6 6.4a1.1 1.1 0 0 1 0 1.2 18.2 18.2 0 0 1-2.7 3.3" />
+                  <path d="M6.7 6.8a17.5 17.5 0 0 0-4.3 4.6 1.1 1.1 0 0 0 0 1.2C3.4 14.3 6.8 19 12 19a10.7 10.7 0 0 0 4.1-.8" />
+                </svg>
+                <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2.4 11.4C3.4 9.7 6.8 5 12 5s8.6 4.7 9.6 6.4a1.1 1.1 0 0 1 0 1.2C20.6 14.3 17.2 19 12 19s-8.6-4.7-9.6-6.4a1.1 1.1 0 0 1 0-1.2Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </span>
+          </label>
+          <p v-if="createUserError" class="create-user-error" data-test="create-user-error">{{ createUserError }}</p>
+          <div class="modal-actions accounts-modal-actions">
+            <button class="btn btn-secondary" type="button" :disabled="createUserSubmitting" @click="closeCreateUser">Cancel</button>
+            <button class="btn btn-primary" type="submit" :disabled="createUserSubmitting" data-test="create-user-submit">
+              {{ createUserSubmitting ? 'Creating...' : 'Create account' }}
+            </button>
+          </div>
+        </form>
       </section>
     </div>
 
@@ -350,5 +432,93 @@ async function copyPassword() {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 8px;
+}
+
+/* ── Create-account modal (ported from the former top-bar Create user) ── */
+.create-user-modal {
+  width: 440px;
+  max-width: 90%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.create-user-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.create-user-head h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.create-user-head p {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.create-user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.create-user-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.create-user-password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.create-user-password-input {
+  width: 100%;
+  padding-right: 40px !important;
+}
+
+.create-user-password-toggle {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.create-user-password-toggle svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+.create-user-password-input::-ms-reveal,
+.create-user-password-input::-ms-clear {
+  display: none !important;
+}
+
+.create-user-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 </style>

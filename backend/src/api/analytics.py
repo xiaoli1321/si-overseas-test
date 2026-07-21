@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_current_user, require_manager
@@ -10,7 +11,8 @@ from src.models.tables import User
 from src.repositories.analytics import (
     analytics_summary,
     create_analytics_event,
-    dashboard_summary,
+    dashboard_detail,
+    dashboard_overview,
     query_usage_summary,
 )
 from src.schemas.analytics import (
@@ -20,6 +22,26 @@ from src.schemas.analytics import (
 )
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
+
+
+def _parse_from(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _parse_to(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value).replace(
+            hour=23, minute=59, second=59, microsecond=999999
+        )
+    except ValueError:
+        return None
 
 
 @router.post("/events")
@@ -72,10 +94,49 @@ async def query_usage_endpoint(
     return ok(await query_usage_summary(db, manager))
 
 
-@router.get("/dashboard")
-async def dashboard_endpoint(
+@router.get("/dashboard/overview")
+async def dashboard_overview_endpoint(
     manager: Annotated[User, Depends(require_manager)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    date_from: str | None = None,
+    date_to: str | None = None,
+    country: str | None = None,
+    account_id: int | None = None,
 ) -> dict:
-    """Manager-only operations dashboard aggregated from telemetry + records."""
-    return ok(await dashboard_summary(db, manager))
+    """概览: manager-only aggregated dashboard (matches 大盘数据概览 sheet)."""
+    return ok(
+        await dashboard_overview(
+            db,
+            manager,
+            date_from=_parse_from(date_from),
+            date_to=_parse_to(date_to),
+            country=country,
+            account_id=account_id,
+        )
+    )
+
+
+@router.get("/dashboard/detail")
+async def dashboard_detail_endpoint(
+    manager: Annotated[User, Depends(require_manager)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    date_from: str | None = None,
+    date_to: str | None = None,
+    country: str | None = None,
+    account_id: int | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=200),
+) -> dict:
+    """明细: manager-only detection detail rows (matches 明细数据 sheet)."""
+    return ok(
+        await dashboard_detail(
+            db,
+            manager,
+            date_from=_parse_from(date_from),
+            date_to=_parse_to(date_to),
+            country=country,
+            account_id=account_id,
+            page=page,
+            page_size=page_size,
+        )
+    )
