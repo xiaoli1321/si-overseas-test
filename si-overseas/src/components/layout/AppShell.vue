@@ -287,6 +287,13 @@ function onAuthUnauthorized() {
 
 onMounted(() => {
   window.addEventListener('auth-unauthorized', onAuthUnauthorized);
+  // On a hard refresh, currentAccountProfile is in-memory only and resets to
+  // null, so the role falls back to 'dealer' and manager-only nav (Dashboard /
+  // Account center / Create user) disappears. Re-hydrate the real role from the
+  // backend whenever we load already logged in.
+  if (store.currentUser.value) {
+    void store.loadRemoteBootstrap();
+  }
 });
 </script>
 
