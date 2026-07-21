@@ -113,14 +113,22 @@ async def reset_account_password(
     """Reset a managed account's password and return the new plaintext once.
 
     Passwords are bcrypt-hashed and never recoverable, so the account center
-    resets instead of revealing. A manager may only reset accounts they created.
-    The plaintext is returned to the caller for one-time display and is never
-    written to logs or the audit trail.
+    resets instead of revealing. A manager may reset accounts they manage (see
+    ``list_managed_users``). The plaintext is returned to the caller for one-time
+    display and is never written to logs or the audit trail.
     """
     if actor.role != "manager":
         raise ForbiddenError("Only manager users can reset account passwords.")
     target = await get_user_by_id(db, target_user_id)
-    if target is None or target.created_by != actor.id:
+    # Manageable = accounts this manager created, or legacy accounts with no
+    # recorded creator; never the manager's own record. Mirrors list_managed_users.
+    manageable = (
+        target is not None
+        and target.id != actor.id
+        and target.role != "manager"
+        and (target.created_by is None or target.created_by == actor.id)
+    )
+    if not manageable:
         raise NotFoundError("Account was not found.")
 
     password = (new_password or "").strip() or generate_password()

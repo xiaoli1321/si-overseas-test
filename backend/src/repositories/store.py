@@ -50,11 +50,21 @@ async def get_users_by_ids(
 async def list_managed_users(
     db: AsyncSession, manager_id: int
 ) -> Sequence[User]:
-    """List accounts provisioned by a given manager (newest first)."""
+    """List accounts a manager can manage (newest first).
+
+    Matches non-manager (dealer) accounts the manager provisioned
+    (``created_by == manager_id``) plus legacy accounts created before the
+    ``created_by`` column existed (``created_by IS NULL``). Manager accounts are
+    never listed here (the account center manages dealer logins only).
+    """
     result = await db.execute(
         select(User)
         .options(selectinload(User.distributor))
-        .where(User.created_by == manager_id)
+        .where(
+            or_(User.created_by == manager_id, User.created_by.is_(None)),
+            User.id != manager_id,
+            User.role != "manager",
+        )
         .order_by(User.created_at.desc())
     )
     return result.scalars().all()

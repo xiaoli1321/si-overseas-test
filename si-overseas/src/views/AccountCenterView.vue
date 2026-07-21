@@ -164,7 +164,7 @@ async function copyPassword() {
         <div>
           <h1>Account Center</h1>
           <p style="color: var(--text-secondary); font-size: var(--text-sm); margin-top: 6px; max-width: 620px">
-            Accounts you have created. Passwords are stored one-way (hashed) and cannot be shown &mdash;
+            Accounts you manage. Passwords are stored one-way (hashed) and cannot be shown &mdash;
             use <strong>Reset password</strong> to set a new one, which is displayed once so you can pass it on.
           </p>
         </div>
