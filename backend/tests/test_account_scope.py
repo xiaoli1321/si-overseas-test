@@ -5,7 +5,11 @@ from sqlalchemy import select
 
 from src.core.exceptions import BusinessValidationError, NotFoundError
 from src.models.tables import AuditLog, ChatSession, DetectRecord, UploadedFile
-from src.repositories.scopes import apply_user_scope, require_user_scope
+from src.repositories.scopes import (
+    apply_scope_for_user,
+    apply_user_scope,
+    require_user_scope,
+)
 from src.services.detections import validate_file_ownership
 
 
@@ -46,6 +50,26 @@ def test_apply_user_scope_should_filter_audit_log_queries_by_user_id() -> None:
 
 
 
+
+
+def test_apply_scope_for_user_should_filter_for_dealer() -> None:
+    dealer = SimpleNamespace(id=42, role="dealer")
+
+    query = apply_scope_for_user(select(DetectRecord), DetectRecord, dealer)
+
+    compiled = _sql_text(query)
+
+    assert "detect_records.user_id = 42" in compiled
+
+
+def test_apply_scope_for_user_should_not_filter_for_manager() -> None:
+    manager = SimpleNamespace(id=42, role="manager")
+
+    query = apply_scope_for_user(select(DetectRecord), DetectRecord, manager)
+
+    compiled = _sql_text(query)
+
+    assert "user_id" not in compiled
 
 
 def test_require_user_scope_should_allow_same_account_resource() -> None:

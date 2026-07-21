@@ -42,6 +42,46 @@ export interface CreateUserPayload {
   distributorName: string;
 }
 
+export interface ManagedUser {
+  id: string;
+  email: string;
+  role: string;
+  dealerName: string;
+  createdAt: string | null;
+}
+
+export interface ResetPasswordResult {
+  id: string;
+  email: string;
+  password: string;
+}
+
+export interface DashboardData {
+  totals: {
+    logins: number;
+    deviceQueries: number;
+    batchQueries: number;
+    batchDevices: number;
+    diagnoses: number;
+    records: number;
+  };
+  verdicts: { eligible: number; notEligible: number; underReview: number };
+  adoption: { adopted: number; rejected: number };
+  queryUsage: { single: number; batch: number; search: number };
+  byFaultCategory: Array<{ category: string; count: number }>;
+  byAccount: Array<{
+    accountId: string;
+    email: string;
+    dealerName: string;
+    logins: number;
+    queries: number;
+    batchDevices: number;
+    diagnoses: number;
+    adopted: number;
+    rejected: number;
+  }>;
+}
+
 interface Envelope<T> {
   code: number;
   message: string;
@@ -172,6 +212,27 @@ export const backendApi = {
     });
   },
 
+  /** Manager-only: list the accounts the current manager has provisioned. */
+  getUsers(): Promise<ManagedUser[]> {
+    return request<ManagedUser[]>('/api/v1/auth/users');
+  },
+
+  /** Manager-only: reset a managed account's password; returns the new plaintext once. */
+  resetUserPassword(userId: string, password?: string): Promise<ResetPasswordResult> {
+    return request<ResetPasswordResult>(
+      `/api/v1/auth/users/${encodeURIComponent(userId)}/reset-password`,
+      {
+        method: 'POST',
+        body: JSON.stringify(password ? { password } : {}),
+      },
+    );
+  },
+
+  /** Manager-only: aggregated operations dashboard from telemetry + records. */
+  getDashboard(): Promise<DashboardData> {
+    return request<DashboardData>('/api/v1/analytics/dashboard');
+  },
+
   getDevice(sn: string): Promise<Device> {
     return request<Device>(`/api/v1/devices/${encodeURIComponent(sn)}`);
   },
@@ -291,6 +352,7 @@ export const backendApi = {
     serialNo?: string;
     dateFrom?: string;
     dateTo?: string;
+    accountId?: string;
   } = {}): Promise<{ items: DetectRecord[]; total: number; page: number; pageSize: number }> {
     const qs = new URLSearchParams();
     qs.set('page', String(params.page ?? 1));
@@ -300,6 +362,7 @@ export const backendApi = {
     if (params.serialNo) qs.set('serial_no', params.serialNo);
     if (params.dateFrom) qs.set('date_from', params.dateFrom);
     if (params.dateTo) qs.set('date_to', params.dateTo);
+    if (params.accountId) qs.set('account_id', params.accountId);
     const data = await request<{ items: DetectRecord[]; total: number; page: number; page_size: number }>(
       `/api/v1/records?${qs.toString()}`
     );
@@ -317,6 +380,7 @@ export const backendApi = {
     serialNo?: string;
     dateFrom?: string;
     dateTo?: string;
+    accountId?: string;
   } = {}): string {
     const qs = new URLSearchParams();
     if (params.faultCategory) qs.set('fault_category', params.faultCategory);
@@ -324,6 +388,7 @@ export const backendApi = {
     if (params.serialNo) qs.set('serial_no', params.serialNo);
     if (params.dateFrom) qs.set('date_from', params.dateFrom);
     if (params.dateTo) qs.set('date_to', params.dateTo);
+    if (params.accountId) qs.set('account_id', params.accountId);
     const token = getStoredToken();
     if (token) qs.set('token', token);
     const query = qs.toString();

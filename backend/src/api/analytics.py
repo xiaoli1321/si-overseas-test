@@ -3,11 +3,16 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.deps import get_current_user
+from src.api.deps import get_current_user, require_manager
 from src.core.database import get_db
 from src.core.responses import ok
 from src.models.tables import User
-from src.repositories.analytics import analytics_summary, create_analytics_event
+from src.repositories.analytics import (
+    analytics_summary,
+    create_analytics_event,
+    dashboard_summary,
+    query_usage_summary,
+)
 from src.schemas.analytics import (
     AnalyticsEventRequest,
     AnalyticsSummaryResponse,
@@ -56,3 +61,21 @@ async def summary_endpoint(
         await analytics_summary(db, user.id)
     )
     return ok(summary.model_dump(by_alias=True))
+
+
+@router.get("/query-usage")
+async def query_usage_endpoint(
+    manager: Annotated[User, Depends(require_manager)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
+    """Manager-only view of device-query usage (validates batch-query demand)."""
+    return ok(await query_usage_summary(db, manager))
+
+
+@router.get("/dashboard")
+async def dashboard_endpoint(
+    manager: Annotated[User, Depends(require_manager)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
+    """Manager-only operations dashboard aggregated from telemetry + records."""
+    return ok(await dashboard_summary(db, manager))

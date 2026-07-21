@@ -32,6 +32,7 @@ export interface DetectRecord {
   email: string;
   initiatorEmail: string;
   initiatorName: string;
+  accountId?: string;
   dealerId: string;
   dealerName: string;
   organizationName: string;

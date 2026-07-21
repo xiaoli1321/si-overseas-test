@@ -4,12 +4,30 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import DashboardCards from '@/components/records/DashboardCards.vue';
 import { useDemoStore } from '@/composables/useDemoStore';
-import { backendApi } from '@/api/backend';
+import { backendApi, type ManagedUser } from '@/api/backend';
 import { formatDurationText } from '@/utils/date';
 import type { DetectRecord } from '@/types/record';
 
 const router = useRouter();
 const store = useDemoStore();
+
+// ─── Manager-only: per-account attribution & filtering ───
+const managedAccounts = ref<ManagedUser[]>([]);
+const accountFilter = ref<string>('all');
+
+async function loadManagedAccounts() {
+  if (!store.isManager.value || !store.backendOnline.value) return;
+  try {
+    managedAccounts.value = await backendApi.getUsers();
+  } catch {
+    managedAccounts.value = [];
+  }
+}
+
+function selectedAccountLabel() {
+  if (accountFilter.value === 'all') return 'All accounts';
+  return managedAccounts.value.find(a => a.id === accountFilter.value)?.email ?? 'All accounts';
+}
 
 function debounce<T extends (...args: any[]) => any>(fn: T, delay = 300): (...args: Parameters<T>) => void {
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -22,7 +40,9 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay = 300): (...ar
 }
 
 onMounted(() => {
-  void store.loadRemoteBootstrap();
+  void store.loadRemoteBootstrap().then(() => {
+    void loadManagedAccounts();
+  });
   if (store.backendOnline.value) {
     void fetchPage();
   }
@@ -34,7 +54,7 @@ const scenario = ref<'all' | DetectRecord['faultCategory']>('all');
 const conclusion = ref<'all' | DetectRecord['conclusion']>('all');
 const snFilter = ref('');
 const openDatePicker = ref<'from' | 'to' | null>(null);
-const openSelect = ref<'scenario' | 'conclusion' | null>(null);
+const openSelect = ref<'scenario' | 'conclusion' | 'account' | null>(null);
 
 const page = ref(1);
 const pageSize = ref(10);
@@ -73,6 +93,7 @@ async function fetchPage() {
       serialNo: snFilter.value.trim() || undefined,
       dateFrom: dateFrom.value || undefined,
       dateTo: dateTo.value || undefined,
+      accountId: accountFilter.value !== 'all' ? accountFilter.value : undefined,
     });
     serverRecords.value = result.items;
     serverTotal.value = result.total;
@@ -130,7 +151,7 @@ const debouncedFetchPage = debounce(() => {
   if (isOnline.value) void fetchPage();
 }, 300);
 
-watch([dateFrom, dateTo, scenario, conclusion], () => {
+watch([dateFrom, dateTo, scenario, conclusion, accountFilter], () => {
   page.value = 1;
   selectedRecordIds.value = [];
   if (isOnline.value) void fetchPage();
@@ -234,6 +255,7 @@ function clearFilters() {
   scenario.value = 'all';
   conclusion.value = 'all';
   snFilter.value = '';
+  accountFilter.value = 'all';
   page.value = 1;
   if (isOnline.value) void fetchPage();
 }
@@ -270,9 +292,14 @@ function shiftCalendarMonth(delta: number) {
   );
 }
 
-function toggleSelect(target: 'scenario' | 'conclusion') {
+function toggleSelect(target: 'scenario' | 'conclusion' | 'account') {
   openDatePicker.value = null;
   openSelect.value = openSelect.value === target ? null : target;
+}
+
+function chooseAccount(value: string) {
+  accountFilter.value = value;
+  openSelect.value = null;
 }
 
 function chooseScenario(value: 'all' | DetectRecord['faultCategory']) {
@@ -416,6 +443,7 @@ function exportCsv() {
       serialNo: snFilter.value.trim() || undefined,
       dateFrom: dateFrom.value || undefined,
       dateTo: dateTo.value || undefined,
+      accountId: accountFilter.value !== 'all' ? accountFilter.value : undefined,
     });
     window.open(url, '_blank');
     return;
@@ -590,6 +618,44 @@ function exportCsv() {
             </button>
           </div>
         </div>
+        <div v-if="store.isManager.value" class="filter-group filter-popover-anchor" data-test="account-filter-group">
+          <label>Account</label>
+          <button class="ios-select-trigger no-click-outline" type="button" data-test="account-filter-trigger" @click="toggleSelect('account')">
+            <span>{{ selectedAccountLabel() }}</span>
+          </button>
+          <div v-if="openSelect === 'account'" class="ios-select-panel" data-test="ios-select-panel">
+            <button
+              class="ios-select-option no-click-outline"
+              type="button"
+              :class="{ 'is-selected': accountFilter === 'all' }"
+              data-test="account-option-all"
+              @click="chooseAccount('all')"
+            >
+              <span>All accounts</span>
+              <span v-if="accountFilter === 'all'" class="selected-checkmark" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </span>
+            </button>
+            <button
+              v-for="acct in managedAccounts"
+              :key="acct.id"
+              class="ios-select-option no-click-outline"
+              type="button"
+              :class="{ 'is-selected': acct.id === accountFilter }"
+              :data-test="`account-option-${acct.id}`"
+              @click="chooseAccount(acct.id)"
+            >
+              <span>{{ acct.email }}</span>
+              <span v-if="acct.id === accountFilter" class="selected-checkmark" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </span>
+            </button>
+          </div>
+        </div>
         <div class="filter-group">
           <label>Device Identifier</label>
           <input v-model="snFilter" class="form-input macos-control" type="text" placeholder="Filter by Device Identifier..." lang="en-US" />
@@ -663,7 +729,12 @@ function exportCsv() {
                   class="records-checkbox"
                 />
               </td>
-              <td class="mono records-cell-wrap records-cell-sn">{{ record.sn }}</td>
+              <td class="mono records-cell-wrap records-cell-sn">
+                {{ record.sn }}
+                <div v-if="store.isManager.value" class="record-account" :title="record.dealerName && record.dealerName !== '—' ? record.dealerName : ''">
+                  {{ record.initiatorEmail }}
+                </div>
+              </td>
               <td class="records-cell-wrap"><span class="badge badge-teal">{{ record.deviceType }}</span></td>
               <td class="records-cell-wrap">{{ faultCategoryLabel(record.faultCategory) }}</td>
               <td class="records-cell-wrap">{{ getRecordSubtypeTitle(record) }}</td>
@@ -842,6 +913,15 @@ function exportCsv() {
   white-space: nowrap;
   overflow-wrap: normal;
   word-break: keep-all;
+}
+
+.record-account {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted, #94a3b8);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .records-table th:nth-child(1) {

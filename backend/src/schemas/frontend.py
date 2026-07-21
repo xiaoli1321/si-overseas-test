@@ -49,6 +49,17 @@ def user_to_frontend(user: User) -> dict[str, Any]:
     }
 
 
+def managed_user_to_frontend(user: User) -> dict[str, Any]:
+    """Account row for the manager's account-management center."""
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "role": user.role,
+        "dealerName": user.distributor_name or "—",
+        "createdAt": user.created_at.isoformat() if user.created_at else None,
+    }
+
+
 def record_to_frontend(
     record: DetectRecord, user: User | None = None
 ) -> dict[str, Any]:
@@ -86,7 +97,7 @@ def record_to_frontend(
     return {
         "id": str(record.id),
         "sn": record.serial_no,
-        "email": "christest@sibionics.com",
+        "email": account["email"],
         "initiatorEmail": account["email"],
         "initiatorName": account["displayName"],
         "dealerId": account["dealerId"],
@@ -159,11 +170,18 @@ def batch_to_frontend(task: BatchTask, user: User | None = None) -> dict[str, An
     }
 
 
-def record_to_list_item(record: DetectRecord) -> dict[str, Any]:
-    """轻量级列表渲染，不包含 evidence/presentation/thresholdSnapshot 等重字段"""
+def record_to_list_item(
+    record: DetectRecord, submitter: User | None = None
+) -> dict[str, Any]:
+    """轻量级列表渲染，不包含 evidence/presentation/thresholdSnapshot 等重字段。
+
+    ``submitter`` 为该记录的真实提交账号（manager 跨账号查看时用于区分国家/账号）。
+    """
     adoption = {"adopted": "Yes", "rejected": "No", "none": "Not recorded"}.get(
         record.feedback_status, "Not recorded"
     )
+    initiator_email = submitter.username if submitter else None
+    dealer_name = (submitter.distributor_name if submitter else None) or "—"
     return {
         "id": str(record.id),
         "sn": record.serial_no,
@@ -181,6 +199,9 @@ def record_to_list_item(record: DetectRecord) -> dict[str, Any]:
         "status": "complete" if record.status == "completed" else record.status,
         "errorMessage": record.error_message,
         "batchId": f"MULTI-{record.batch_task_id}" if record.batch_task_id else None,
+        "accountId": str(record.user_id),
+        "initiatorEmail": initiator_email or "—",
+        "dealerName": dealer_name,
     }
 
 

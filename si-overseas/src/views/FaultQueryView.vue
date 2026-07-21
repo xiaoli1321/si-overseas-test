@@ -340,6 +340,7 @@ async function search() {
     fault_category: meta.value.category,
     query_type: lines.length > 1 ? 'batch' : 'single',
     query_count: lines.length,
+    batch_count: lines.length,
     serial_nos: lines,
   });
 
