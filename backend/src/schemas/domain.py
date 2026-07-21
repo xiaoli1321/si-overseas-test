@@ -54,6 +54,24 @@ class CreateUserRequest(BaseModel):
         return normalized
 
 
+class ResetPasswordRequest(BaseModel):
+    """Optional manager-supplied password; omitted → server generates one."""
+
+    password: str | None = Field(default=None, max_length=128)
+
+    @field_validator("password")
+    @classmethod
+    def normalize_password(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            return None
+        if len(stripped) < 8:
+            raise ValueError("password must be at least 8 characters")
+        return stripped
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

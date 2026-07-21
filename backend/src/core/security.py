@@ -1,4 +1,6 @@
 from datetime import UTC, datetime, timedelta
+import secrets
+import string
 from typing import Any
 
 import jwt
@@ -8,6 +10,17 @@ from src.core.config import get_settings
 from src.core.exceptions import UnauthorizedError
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Exclude visually ambiguous characters (0/O, 1/l/I) so a manager can read a
+# generated password aloud or over chat without transcription errors.
+_PASSWORD_ALPHABET = "".join(
+    c for c in (string.ascii_letters + string.digits) if c not in "0O1lI"
+)
+
+
+def generate_password(length: int = 12) -> str:
+    """Generate a random, human-transcribable password for account resets."""
+    return "".join(secrets.choice(_PASSWORD_ALPHABET) for _ in range(length))
 
 
 def hash_password(password: str) -> str:

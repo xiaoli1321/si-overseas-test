@@ -141,6 +141,16 @@ function signOut() {
   router.push('/');
 }
 
+function goAccountCenter() {
+  accountOpen.value = false;
+  router.push({ name: 'accounts' });
+}
+
+function goDashboard() {
+  accountOpen.value = false;
+  router.push({ name: 'dashboard' });
+}
+
 function openCreateUser() {
   accountOpen.value = false;
   createUserOpen.value = true;
@@ -277,6 +287,13 @@ function onAuthUnauthorized() {
 
 onMounted(() => {
   window.addEventListener('auth-unauthorized', onAuthUnauthorized);
+  // On a hard refresh, currentAccountProfile is in-memory only and resets to
+  // null, so the role falls back to 'dealer' and manager-only nav (Dashboard /
+  // Account center / Create user) disappears. Re-hydrate the real role from the
+  // backend whenever we load already logged in.
+  if (store.currentUser.value) {
+    void store.loadRemoteBootstrap();
+  }
 });
 </script>
 
@@ -366,6 +383,26 @@ onMounted(() => {
             @click="openCreateUser"
           >
             Create user
+          </button>
+          <button
+            v-if="store.isManager.value"
+            class="account-menu-item"
+            type="button"
+            data-test="dashboard-link"
+            role="menuitem"
+            @click="goDashboard"
+          >
+            Dashboard
+          </button>
+          <button
+            v-if="store.isManager.value"
+            class="account-menu-item"
+            type="button"
+            data-test="account-center-link"
+            role="menuitem"
+            @click="goAccountCenter"
+          >
+            Account center
           </button>
           <button class="account-menu-item" type="button" data-test="account-sign-out" role="menuitem" @click="signOut">Sign out</button>
         </div>

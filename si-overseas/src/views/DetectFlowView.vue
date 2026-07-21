@@ -1528,7 +1528,7 @@ function goToUploadFlow() {
     <div class="page-body">
       <div v-if="phase === 'form'" id="diag-form-shell" class="diag-form-shell" :class="{ 'implant-flow-shell': selectedCategory === 'Application failure' }">
         <div class="diag-form-header slide-up stagger-1">
-          <button class="btn btn-ghost btn-sm" style="margin-bottom:12px" type="button" data-test="detect-back" @click="backFromDetect">&#8592; {{ detectBackLabel }}</button>
+          <button class="btn btn-ghost btn-sm detect-back--highlight" style="margin-bottom:12px" type="button" data-test="detect-back" @click="backFromDetect">&#8592; {{ detectBackLabel }}</button>
           <h1>{{ categoryInfo.title }}</h1>
           <p>{{ categoryInfo.subtitle }}</p>
         </div>
@@ -1759,7 +1759,7 @@ function goToUploadFlow() {
         </div>
 
         <div v-else class="verdict-page">
-          <button class="btn btn-ghost btn-sm slide-up stagger-1" style="margin-bottom:10px" type="button" data-test="detect-back" @click="backFromDetect">&#8592; {{ detectBackLabel }}</button>
+          <button class="btn btn-ghost btn-sm detect-back--highlight slide-up stagger-1" style="margin-bottom:10px" type="button" data-test="detect-back" @click="backFromDetect">&#8592; {{ detectBackLabel }}</button>
           <div class="verdict-bc slide-up stagger-1">
             Devices <span class="sep">/</span> <span class="mono">{{ device.sn }}</span> <span class="sep">/</span> <strong>{{ faultCategoryLabel(latestRecord.faultCategory) }}</strong>
           </div>
@@ -2023,6 +2023,22 @@ function goToUploadFlow() {
 </template>
 
 <style scoped>
+/* Highlighted "back to previous query" affordance — brand-green pill so the
+   return path stands out from the plain ghost buttons around it. */
+.detect-back--highlight {
+  background: rgba(0, 168, 132, 0.09) !important;
+  border: 1px solid rgba(0, 168, 132, 0.4) !important;
+  color: #00806a !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+  border-radius: var(--radius-full, 9999px) !important;
+}
+
+.detect-back--highlight:hover {
+  background: rgba(0, 168, 132, 0.16) !important;
+  border-color: rgba(0, 168, 132, 0.6) !important;
+}
+
 .detect-review-pack {
   margin-bottom: 16px;
   padding: var(--card-padding);

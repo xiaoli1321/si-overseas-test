@@ -7,7 +7,11 @@ from sqlalchemy.orm import selectinload
 
 from src.core.config import get_settings
 from src.models.tables import BatchTask, DetectRecord, Distributor, Threshold, User
-from src.repositories.scopes import apply_user_scope
+from src.repositories.scopes import apply_scope_for_user
+
+
+def _is_manager(actor: User | None) -> bool:
+    return bool(actor is not None and getattr(actor, "role", None) == "manager")
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
@@ -24,6 +28,36 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> User | None:
         select(User).options(selectinload(User.distributor)).where(User.id == user_id)
     )
     return result.scalar_one_or_none()
+
+
+async def get_users_by_ids(
+    db: AsyncSession, user_ids: Sequence[int]
+) -> dict[int, User]:
+    """Resolve a set of user ids to their User rows in one query.
+
+    Used to attribute detection records to the account that submitted them
+    without N+1 lookups when a manager views cross-account history.
+    """
+    ids = {uid for uid in user_ids if uid is not None}
+    if not ids:
+        return {}
+    result = await db.execute(
+        select(User).options(selectinload(User.distributor)).where(User.id.in_(ids))
+    )
+    return {user.id: user for user in result.scalars().all()}
+
+
+async def list_managed_users(
+    db: AsyncSession, manager_id: int
+) -> Sequence[User]:
+    """List accounts provisioned by a given manager (newest first)."""
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.distributor))
+        .where(User.created_by == manager_id)
+        .order_by(User.created_at.desc())
+    )
+    return result.scalars().all()
 
 
 async def get_distributor_by_id(
@@ -73,7 +107,7 @@ async def get_threshold_by_version(
 
 
 def _build_records_query(
-    user_id: int,
+    actor: User,
     *,
     select_target: Select | None = None,
     source: str | None = None,
@@ -83,13 +117,21 @@ def _build_records_query(
     date_from: datetime | None = None,
     date_to: datetime | None = None,
     conclusion: str | None = None,
+    account_id: int | None = None,
 ) -> Select:
-    """Build a base query for detect records with all supported filters."""
+    """Build a base query for detect records with all supported filters.
+
+    Scope follows the acting account: managers see every account's records
+    (and may narrow to one via ``account_id``), while dealers stay restricted
+    to their own rows.
+    """
     if select_target is None:
         select_target = select(DetectRecord)
-    query = apply_user_scope(select_target, DetectRecord, user_id).where(
+    query = apply_scope_for_user(select_target, DetectRecord, actor).where(
         DetectRecord.is_visible_in_workbench.is_(True),
     )
+    if account_id is not None:
+        query = query.where(DetectRecord.user_id == account_id)
     if source:
         query = query.where(DetectRecord.source == source)
     if fault_category:
@@ -117,7 +159,7 @@ def _build_records_query(
 
 async def list_records(
     db: AsyncSession,
-    user_id: int,
+    actor: User,
     *,
     source: str | None = None,
     fault_category: str | None = None,
@@ -126,6 +168,7 @@ async def list_records(
     date_from: datetime | None = None,
     date_to: datetime | None = None,
     conclusion: str | None = None,
+    account_id: int | None = None,
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[DetectRecord], int]:
@@ -135,7 +178,7 @@ async def list_records(
     in a single database round-trip, avoiding a separate count query.
     """
     query = _build_records_query(
-        user_id,
+        actor,
         select_target=select(DetectRecord, func.count().over().label("total")),
         source=source,
         fault_category=fault_category,
@@ -144,6 +187,7 @@ async def list_records(
         date_from=date_from,
         date_to=date_to,
         conclusion=conclusion,
+        account_id=account_id,
     )
     result = await db.execute(
         query.order_by(DetectRecord.created_at.desc())
@@ -160,7 +204,7 @@ async def list_records(
 
 async def iter_records_for_export(
     db: AsyncSession,
-    user_id: int,
+    actor: User,
     *,
     source: str | None = None,
     fault_category: str | None = None,
@@ -169,6 +213,7 @@ async def iter_records_for_export(
     date_from: datetime | None = None,
     date_to: datetime | None = None,
     conclusion: str | None = None,
+    account_id: int | None = None,
     batch_size: int = 1000,
 ) -> AsyncIterator[list[DetectRecord]]:
     """Yield filtered records in stable batches for memory-bounded exports."""
@@ -177,7 +222,7 @@ async def iter_records_for_export(
 
     while True:
         query = _build_records_query(
-            user_id,
+            actor,
             select_target=select(DetectRecord),
             source=source,
             fault_category=fault_category,
@@ -186,6 +231,7 @@ async def iter_records_for_export(
             date_from=date_from,
             date_to=date_to,
             conclusion=conclusion,
+            account_id=account_id,
         )
         if last_created_at is not None and last_id is not None:
             query = query.where(
@@ -217,11 +263,20 @@ async def iter_records_for_export(
 
 
 async def get_record(
-    db: AsyncSession, user_id: int, record_id: int, *, source: str | None = None
+    db: AsyncSession,
+    user_id: int,
+    record_id: int,
+    *,
+    source: str | None = None,
+    viewer: User | None = None,
 ) -> DetectRecord | None:
-    query = apply_user_scope(select(DetectRecord), DetectRecord, user_id).where(
+    # Managers (passed via ``viewer``) may open any account's record; every
+    # other caller stays strictly scoped to ``user_id``.
+    query = select(DetectRecord).where(
         DetectRecord.id == record_id, DetectRecord.is_visible_in_workbench.is_(True)
     )
+    if not _is_manager(viewer):
+        query = query.where(DetectRecord.user_id == user_id)
     if source:
         query = query.where(DetectRecord.source == source)
     result = await db.execute(query)
@@ -229,9 +284,11 @@ async def get_record(
 
 
 async def get_batch_task(
-    db: AsyncSession, user_id: int, task_id: int
+    db: AsyncSession, user_id: int, task_id: int, *, viewer: User | None = None
 ) -> BatchTask | None:
-    query = apply_user_scope(select(BatchTask), BatchTask, user_id)
+    query = select(BatchTask)
+    if not _is_manager(viewer):
+        query = query.where(BatchTask.user_id == user_id)
     result = await db.execute(
         query.options(selectinload(BatchTask.records)).where(BatchTask.id == task_id)
     )
@@ -248,7 +305,7 @@ async def get_batch_records(
 
 
 async def stats(
-    db: AsyncSession, user_id: int, *, source: str | None = None
+    db: AsyncSession, actor: User, *, source: str | None = None
 ) -> dict[str, int]:
     stmt = select(
         func.count(DetectRecord.id).label("total"),
@@ -271,9 +328,9 @@ async def stats(
             )
         ).label("pending"),
     ).where(
-        DetectRecord.user_id == user_id,
         DetectRecord.is_visible_in_workbench.is_(True),
     )
+    stmt = apply_scope_for_user(stmt, DetectRecord, actor)
     if source:
         stmt = stmt.where(DetectRecord.source == source)
     result = await db.execute(stmt)
