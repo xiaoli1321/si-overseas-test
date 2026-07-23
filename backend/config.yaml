@@ -246,7 +246,7 @@ verdict_presentation:
         afterSalesStatus: "You can continue to after-sales from this result."
         why: "The device is already in an abnormal state and the fall off path rule is satisfied by the current telemetry."
         wearingAdvice: "Do not try to reattach the sensor if it has already fallen off. Please remind users to keep the wearing area completely dry when wearing the product, and avoid strenuous exercise and abrasions. Wearing a reinforcing brace is also recommended."
-        nextAction: "Continue to the after-sales application with this record."
+        nextAction: "Provide after-sales replacement for this device."
     fall_off.not_detected:
       badge: "NOT WARRANTY ELIGIBLE"
       title: "Fall off not detected"
@@ -284,7 +284,7 @@ verdict_presentation:
         afterSalesStatus: "You can continue to after-sales from this result."
         why: "The current device matches the initialization-abnormality rule, so this record supports after-sales on the sensor-abnormality path."
         wearingAdvice: "This device is no longer usable. Please guide the user to properly remove the sensor. Remind users to wear the sensors according to the video."
-        nextAction: "Provide after-sales service for this device."
+        nextAction: "Provide after-sales replacement for this device."
     sensor_abnormal.gs1_after_warmup:
       badge: "WARRANTY ELIGIBLE"
       title: "Abnormal after Warm-up"
@@ -297,7 +297,7 @@ verdict_presentation:
         afterSalesStatus: "You can continue to after-sales from this result."
         why: "The current device matches the in-use abnormality, so this record supports after-sales on the sensor-abnormality path."
         wearingAdvice: "This device is no longer usable. Please guide the user to properly remove the sensor. Remind users to avoid scratching or rubbing the device, and to avoid collisions and strenuous exercise."
-        nextAction: "Provide after-sales service for this device."
+        nextAction: "Provide after-sales replacement for this device."
     sensor_abnormal.waiting_recovery:
       badge: "PENDING REVIEW"
       title: "Temporary sensor abnormality"
@@ -323,7 +323,7 @@ verdict_presentation:
         afterSalesStatus: "You can continue to after-sales from this result."
         why: "The current device matches the low recovery possibility abnormality, so this record supports after-sales on the sensor-abnormality path."
         wearingAdvice: "This device is no longer usable. Please guide the user to properly remove the sensor. Remind users to avoid scratching or rubbing the device, and to avoid collisions and strenuous exercise."
-        nextAction: "Provide after-sales service for this device."
+        nextAction: "Provide after-sales replacement for this device."
 
     # ── Sensor abnormality: GS1 ECO ──
     sensor_abnormal.gs1_eco_init_failed:
@@ -377,12 +377,12 @@ verdict_presentation:
         afterSalesStatus: "You can continue to after-sales from this result."
         why: "Sensor failure. The disposable probe has failed and cannot recover."
         wearingAdvice: "When pressing the transmitter button, do not use excessive force on the application site. Simply place the blue applicator lightly against the skin at the application site, then gently press the transmitter button."
-        nextAction: "Continue to the after-sales or customer-service flow with this record."
+        nextAction: "Provide after-sales replacement for this device."
 
     # ── Application failure ──
     application_failure.assembly_failure:
       badge: "WARRANTY ELIGIBLE"
-      title: "Application failure {subtype} detected"
+      title: "Application failure detected"
       summary: "The uploaded photos match an implantation-failure pattern."
       whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
       whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
@@ -392,10 +392,10 @@ verdict_presentation:
         afterSalesStatus: "You can continue to after-sales from this result."
         why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
         wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
-        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+        nextAction: "Provide after-sales replacement for this device."
     application_failure.guide_needle_retention:
       badge: "WARRANTY ELIGIBLE"
-      title: "Application failure {subtype} detected"
+      title: "Application failure detected"
       summary: "The uploaded photos match an implantation-failure pattern."
       whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
       whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
@@ -405,10 +405,10 @@ verdict_presentation:
         afterSalesStatus: "You can continue to after-sales from this result."
         why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
         wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
-        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+        nextAction: "Provide after-sales replacement for this device."
     application_failure.early_launches:
       badge: "WARRANTY ELIGIBLE"
-      title: "Application failure {subtype} detected"
+      title: "Application failure detected"
       summary: "The uploaded photos match an implantation-failure pattern."
       whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
       whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
@@ -418,10 +418,10 @@ verdict_presentation:
         afterSalesStatus: "You can continue to after-sales from this result."
         why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
         wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
-        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+        nextAction: "Provide after-sales replacement for this device."
     application_failure.sensor_falling_out:
       badge: "WARRANTY ELIGIBLE"
-      title: "Application failure {subtype} detected"
+      title: "Application failure detected"
       summary: "The uploaded photos match an implantation-failure pattern."
       whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
       whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
@@ -431,10 +431,10 @@ verdict_presentation:
         afterSalesStatus: "You can continue to after-sales from this result."
         why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
         wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
-        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+        nextAction: "Provide after-sales replacement for this device."
     application_failure.adhesion_failure:
       badge: "WARRANTY ELIGIBLE"
-      title: "Application failure {subtype} detected"
+      title: "Application failure detected"
       summary: "The uploaded photos match an implantation-failure pattern."
       whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
       whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
@@ -444,10 +444,10 @@ verdict_presentation:
         afterSalesStatus: "You can continue to after-sales from this result."
         why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
         wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
-        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+        nextAction: "Provide after-sales replacement for this device."
     application_failure.exposed_electrodes:
       badge: "WARRANTY ELIGIBLE"
-      title: "Application failure {subtype} detected"
+      title: "Application failure detected"
       summary: "The uploaded photos match an implantation-failure pattern."
       whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
       whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
@@ -457,10 +457,10 @@ verdict_presentation:
         afterSalesStatus: "You can continue to after-sales from this result."
         why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
         wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
-        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+        nextAction: "Provide after-sales replacement for this device."
     application_failure.implanter_damage:
       badge: "WARRANTY ELIGIBLE"
-      title: "Application failure {subtype} detected"
+      title: "Application failure detected"
       summary: "The uploaded photos match an implantation-failure pattern."
       whatWeFound: "VLM identified {subtype} from {photo_count} photos. Detail: {vlm_reason}. Score {score} / 10, Device not activated."
       whyThisResult: "Implantation-failure review rule is met. Needs >= {app_photo_count} photos. Needs score > {app_after_sales_score}; The current image confidence score is {score}, so after-sales service can be provided."
@@ -470,7 +470,7 @@ verdict_presentation:
         afterSalesStatus: "You can continue to after-sales from this result."
         why: "VLM conclusion: {subtype}. Material score is {score}/10, above the {app_after_sales_score}/10 auto-pass line. This subtype falls into the damage implant bucket."
         wearingAdvice: "Please remind users to assemble and wear the device according to the instruction video."
-        nextAction: "Continue to the after-sales application with this photo set, activation status, and VLM conclusion."
+        nextAction: "Provide after-sales replacement for this device."
     application_failure.insufficient_images:
       badge: "PENDING REVIEW"
       title: "Application failure not detected"
